@@ -19,9 +19,11 @@ os.makedirs(projects_dir, exist_ok=True)
 solvers_dir = os.path.join(app_dir, "solvers")
 os.makedirs(solvers_dir, exist_ok=True)
 
+def get_project_path(project_name : str):
+    return os.path.join(projects_dir, project_name)
 
 def create_new_project_directory(project_name : str):
-    project_dir = os.path.join(projects_dir, project_name)
+    project_dir = get_project_path(project_name)
 
     if (os.path.exists(project_dir)):
         raise FileExistsError(f"Проект с именем '{project_name}' уже существует.")

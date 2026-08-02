@@ -1,5 +1,6 @@
 import streamlit as st
 import pages.common.sidebar as CommonSidebar
+import utils.db_handler as DbHandler
 
 st.title("KHRR")
 
@@ -9,6 +10,8 @@ if not "project_name" in st.query_params:
         st.switch_page("pages/select_project.py")
     st.stop()
 PROJECT_NAME = st.query_params["project_name"]
+
+DbHandler.init_project_db(PROJECT_NAME)
 
 st.header(f"Проект '{PROJECT_NAME}'")
 
