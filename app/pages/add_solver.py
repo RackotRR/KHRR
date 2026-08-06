@@ -21,7 +21,7 @@ with st.container(border=True):
     no_solver_name = (solver_name is None) or (len(solver_name) == 0)
 
     uploaded_file = st.file_uploader("Исполняемый файл солвера", type=["exe", ""])
-    no_uploaded_file = (uploaded_file is None) or (uploaded_file is None)
+    no_uploaded_file = uploaded_file is None
 
     add_solver = st.button(
         "Добавить",

@@ -26,7 +26,7 @@ with st.container(border=True):
         disabled=filename is None
     )
     if switch_to_project:
-        st.switch_page("pages/set_calc_params.py", query_params={ "project_name": filename })
+        st.switch_page("pages/project_main.py", query_params={ "project_name": filename })
 
 # Создание нового проекта
 
@@ -43,7 +43,7 @@ def new_project_dialog():
 
         try:
             FilesystemHandler.create_new_project_directory(new_project_name)
-            st.switch_page("pages/set_calc_params.py", query_params={ "project_name": new_project_name })
+            st.switch_page("pages/project_main.py", query_params={ "project_name": new_project_name })
         except FileExistsError as ex:
             st.error(f"Ошибка создания проекта. { ex }")
 

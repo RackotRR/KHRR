@@ -19,13 +19,32 @@ os.makedirs(projects_dir, exist_ok=True)
 solvers_dir = os.path.join(app_dir, "solvers")
 os.makedirs(solvers_dir, exist_ok=True)
 
-def get_project_path(project_name : str):
+def get_project_path(project_name : str) -> str:
     return os.path.join(projects_dir, project_name)
 
-def create_new_project_directory(project_name : str):
+def get_project_ini_path(project_name : str) -> str:
+    project_dir = get_project_path(project_name)
+    ini_dir = os.path.join(project_dir, "ini")
+    return ini_dir
+
+
+def create_new_project_directory(project_name : str) -> str:
     project_dir = get_project_path(project_name)
 
     if (os.path.exists(project_dir)):
         raise FileExistsError(f"Проект с именем '{project_name}' уже существует.")
 
     os.makedirs(project_dir)
+
+    return project_dir
+    
+def create_ini_directory(project_name : str) -> str:
+    project_dir = get_project_path(project_name)
+
+    if (not os.path.exists(project_dir)):
+        raise FileExistsError(f"Проект с именем '{project_name}' не существует.")
+
+    ini_dir = os.path.join(project_dir, "ini")
+    os.makedirs(ini_dir, exist_ok=True)
+
+    return ini_dir
