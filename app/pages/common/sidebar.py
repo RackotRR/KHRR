@@ -1,4 +1,5 @@
 import streamlit as st
+from . import navigation as CommonNavigation
 
 CAN_SWITCH_TO_SELECT_PROJECT = 1
 CAN_ADD_SOLVER = 2
@@ -17,7 +18,7 @@ def make_sidebar(params : dict = {}):
             disabled=not can_switch_to_select_project
         )
         if switch_to_select_project:
-            st.switch_page("pages/select_project.py")
+            CommonNavigation.switch_to_select_project()
 
 
         # Добавление солвера
@@ -29,4 +30,4 @@ def make_sidebar(params : dict = {}):
             disabled=not can_switch_to_add_solver
         )
         if switch_to_add_solver:
-            st.switch_page("pages/add_solver.py")
+            CommonNavigation.switch_to_add_solver()

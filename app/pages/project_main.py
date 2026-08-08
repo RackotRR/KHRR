@@ -1,8 +1,8 @@
 import streamlit as st
 import pages.common.sidebar as CommonSidebar
+import pages.common.navigation as CommonNavigation
 import utils.db_handler as DbHandler
 import utils.filesystem_handler as FilesystemHandler
-import pandas as pd
 import os
 
 st.title("KHRR")
@@ -10,95 +10,22 @@ st.title("KHRR")
 if not "project_name" in st.query_params:
     st.error("В параметрах запроса не указано название проекта.")
     if (st.button(label="Home", use_container_width=True)):
-        st.switch_page("pages/select_project.py")
+        CommonNavigation.switch_to_select_project()
     st.stop()
 PROJECT_NAME = st.query_params["project_name"]
 
 DbHandler.init_project_db(PROJECT_NAME)
 ini_dir = FilesystemHandler.create_ini_directory(PROJECT_NAME)
+calculations_dir = FilesystemHandler.create_calculations_directory(PROJECT_NAME)
+calculations = os.listdir(calculations_dir)
+
 
 NUMBER_FORMAT="%.5f"
 
 st.header(f"Проект '{PROJECT_NAME}'")
 
 CommonSidebar.make_sidebar()
-
-with st.expander("Новый расчёт"):
-    st.text_input("Название расчёта")
-    
-    # with st.container(border=True):
-    #     # одна галактика
-    #     st.markdown("#### Начальные условия (упрощённый режим)")
-    with st.expander("Начальные условия (упрощённый режим)", expanded=True):
-
-        col_star, col_dark = st.columns(2)
-
-        col_star.number_input(
-            "Масса звёздной компоненты", 
-            value=1.0, 
-            format=NUMBER_FORMAT, 
-            help="Безразмерная масса"
-        )
-        col_dark.number_input(
-            "Масса тёмной компоненты", 
-            value=1.0, 
-            format=NUMBER_FORMAT, 
-            help="Безразмерная масса"
-        )
-
-        col_star.number_input(
-            "Сглаживание звёздной компоненты", 
-            value=0.004, 
-            format=NUMBER_FORMAT
-        )
-        col_dark.number_input(
-            "Сглаживание тёмной компоненты", 
-            value=0.004, 
-            format=NUMBER_FORMAT
-        )
-
-        ini_files_raw = os.listdir(ini_dir)
-        ini_files = [None]
-        for ini_file in ini_files_raw:
-            file_name, file_ext = os.path.splitext(ini_file)
-            ini_files.append(file_name)
-
-        star_file = col_star.selectbox("Файл звёздной компоненты", options=ini_files)
-        dark_file = col_dark.selectbox("Файл тёмной компоненты", options=ini_files)
-
-        @st.dialog("Новый ini-файл компоненты")
-        def new_particles_ini_dialog():
-            particles_ini_name = st.text_input("Название файла компоненты")
-            no_ini_name = len(particles_ini_name) == 0
-
-            uploaded_file = st.file_uploader("Файл компоненты", type=["txt", ""])
-            no_uploaded_file = uploaded_file is None
-
-            create_particles_ini = st.button(
-                "Создать", 
-                use_container_width=True, 
-                disabled=no_ini_name or no_uploaded_file
-            )
-            if create_particles_ini:
-                try:
-                    if particles_ini_name in ini_files:
-                        raise FileExistsError("Файл компоненты с данным идентификатором уже добавлен.")
-                    
-                    dst_path = os.path.join(ini_dir, f"{particles_ini_name}.txt")
-                    with open(dst_path, "wb") as f:
-                        f.write(uploaded_file.getbuffer())
-
-                    st.rerun()
-                    
-                except FileExistsError as ex:
-                    st.error(f"Ошибка создания файла компоненты. { ex }")
-
-
-        if st.button("Импорт файла с частицами", use_container_width=True):
-            new_particles_ini_dialog()
-
          
-
     # with st.container(border=True):
     #     st.markdown("#### Начальные условия")
 
@@ -187,8 +114,84 @@ with st.expander("Новый расчёт"):
 
 
 
-    # with st.container(border=True):
-    #     st.markdown("#### Параметры симуляции")
+with st.expander("Новый расчёт"):
+    calculation_name = st.text_input("Название расчёта")
+    no_calculation_name = (calculation_name is None) or len(calculation_name) == 0
+    
+    # одна галактика
+    with st.expander("Начальные условия (упрощённый режим)", expanded=True):
+
+        col_star, col_dark = st.columns(2)
+
+
+        col_star.number_input(
+            "Масса звёздной компоненты", 
+            value=1.0,
+            format=NUMBER_FORMAT, 
+            help="Безразмерная масса",
+            key="mass_star"
+        )
+        col_dark.number_input(
+            "Масса тёмной компоненты", 
+            value=1.0, 
+            format=NUMBER_FORMAT, 
+            help="Безразмерная масса",
+            key="mass_dark"
+        )
+
+
+        col_star.number_input(
+            "Сглаживание звёздной компоненты", 
+            value=0.004, 
+            format=NUMBER_FORMAT,
+            key="soft_star"
+        )
+        col_dark.number_input(
+            "Сглаживание тёмной компоненты", 
+            value=0.004, 
+            format=NUMBER_FORMAT,
+            key="soft_dark"
+        )
+
+        ini_files_raw = os.listdir(ini_dir)
+        ini_files = [None]
+        for ini_file in ini_files_raw:
+            file_name, file_ext = os.path.splitext(ini_file)
+            ini_files.append(file_name)
+
+        star_file = col_star.selectbox("Файл звёздной компоненты", options=ini_files, key="ini_file_star")
+        dark_file = col_dark.selectbox("Файл тёмной компоненты", options=ini_files, key="ini_file_dark")
+
+        @st.dialog("Новый ini-файл компоненты")
+        def new_particles_ini_dialog():
+            particles_ini_name = st.text_input("Название файла компоненты")
+            no_ini_name = len(particles_ini_name) == 0
+
+            uploaded_file = st.file_uploader("Файл компоненты", type=["txt", ""])
+            no_uploaded_file = uploaded_file is None
+
+            create_particles_ini = st.button(
+                "Создать", 
+                use_container_width=True, 
+                disabled=no_ini_name or no_uploaded_file
+            )
+            if create_particles_ini:
+                try:
+                    if particles_ini_name in ini_files:
+                        raise FileExistsError("Файл компоненты с данным идентификатором уже добавлен.")
+                    
+                    dst_path = os.path.join(ini_dir, f"{particles_ini_name}.txt")
+                    with open(dst_path, "wb") as f:
+                        f.write(uploaded_file.getbuffer())
+
+                    st.rerun()
+                    
+                except FileExistsError as ex:
+                    st.error(f"Ошибка создания файла компоненты. { ex }")
+
+
+        if st.button("Импорт файла с частицами", use_container_width=True):
+            new_particles_ini_dialog()
 
     with st.expander("Параметры симуляции", expanded=True):
 
@@ -208,10 +211,29 @@ with st.expander("Новый расчёт"):
             help="Безразмерное время"
         )
 
+    with st.expander("Параметры запуска", expanded=True):
+        solvers = FilesystemHandler.scan_for_solvers()
+        st.selectbox("Используемый солвер", options=solvers)
 
 
 
-    st.button("Создать расчёт", use_container_width=True)
+
+
+    
+    create_new_calculation = st.button(
+        "Создать расчёт", 
+        use_container_width=True,
+        disabled=no_calculation_name
+    )
+    if create_new_calculation:
+
+        try:
+            FilesystemHandler.create_new_calculation_directory(PROJECT_NAME, calculation_name)
+            CommonNavigation.switch_to_calculation_main(PROJECT_NAME, calculation_name)
+
+        except FileExistsError as ex:
+            st.error(f"Ошибка создания расчёта. { ex }")
+            
 
 
 

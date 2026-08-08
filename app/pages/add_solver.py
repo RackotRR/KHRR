@@ -7,11 +7,7 @@ import utils.filesystem_handler as FilesystemHandler
 
 st.title("KHRR")
 
-solvers_raw = os.listdir(FilesystemHandler.solvers_dir)
-solvers = []
-for solver_path in solvers_raw:
-    file_name, file_ext = os.path.splitext(solver_path)
-    solvers.append(file_name)
+solvers = FilesystemHandler.scan_for_solvers()
 
 with st.container(border=True):
 
@@ -59,7 +55,16 @@ with st.container(border=True):
 
     st.write(f"Доступно: { len(solvers) } солверов")
     for id, solver_name in enumerate(solvers):
-        st.write(f"[{id}] {solver_name}")
+
+        with st.expander(solver_name):
+            st.text_input(f"Солвер {id}", value=solver_name, label_visibility="collapsed")
+            col1, col2 = st.columns(2)
+
+            if col1.button("Переименовать", use_container_width=True):
+                st.error("Not implemented")
+
+            if col2.button("Удалить", use_container_width=True):
+                st.error("Not implemented")
 
 
 CommonSidebar.make_sidebar({ 

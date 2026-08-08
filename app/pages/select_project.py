@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import pages.common.sidebar as CommonSidebar
+import pages.common.navigation as CommonNavigation
 import utils.filesystem_handler as FilesystemHandler
 
 st.title("KHRR")
@@ -26,7 +27,7 @@ with st.container(border=True):
         disabled=filename is None
     )
     if switch_to_project:
-        st.switch_page("pages/project_main.py", query_params={ "project_name": filename })
+        CommonNavigation.switch_to_project_main(project_name=filename)
 
 # Создание нового проекта
 
@@ -40,10 +41,9 @@ def new_project_dialog():
         disabled=len(new_project_name) == 0
     )
     if create_new_project:
-
         try:
             FilesystemHandler.create_new_project_directory(new_project_name)
-            st.switch_page("pages/project_main.py", query_params={ "project_name": new_project_name })
+            CommonNavigation.switch_to_project_main(project_name=new_project_name)
         except FileExistsError as ex:
             st.error(f"Ошибка создания проекта. { ex }")
 
