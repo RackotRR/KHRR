@@ -165,13 +165,8 @@ def make_existing_calcs():
             ini_params = CommonCalcParams.read_calculation_ini_params(PROJECT_NAME, calculation_name)
             sim_params = CommonCalcParams.read_calculation_sim_params(PROJECT_NAME, calculation_name)
 
-            data_params = pd.DataFrame([{
-                    "Время симуляции": sim_params.get("time_max"),
-                    "Шаг сохранения": sim_params.get("dt_save"),
-                    "Шаг интегрирования": sim_params.get("dt_dynamics"),
-                }]
-            )
-            st.table(data_params.transpose(), hide_header=True)
+            CommonCalcParams.make_ini_params_table(ini_params)
+            CommonCalcParams.make_sim_params_table(sim_params)
 
             col1, col2 = st.columns(2)
 

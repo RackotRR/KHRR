@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import json
+import pandas as pd
 import utils.filesystem_handler as FilesystemHandler
 import utils.db_handler as DbHandler
 
@@ -33,14 +34,14 @@ def new_particles_ini_dialog(project_name : str):
         except FileExistsError as ex:
             st.error(f"Ошибка создания файла компоненты. { ex }")
 
-def make_ini_params(project_name : str, ini_params : dict):
+MASS_STAR_ID = "mass_star"
+MASS_DARK_ID = "mass_dark"
+SOFT_STAR_ID = "soft_star"
+SOFT_DARK_ID = "soft_dark"
+INI_FILE_STAR_ID = "ini_file_star"
+INI_FILE_DARK_ID = "ini_file_dark"
 
-    MASS_STAR_ID = "mass_star"
-    MASS_DARK_ID = "mass_dark"
-    SOFT_STAR_ID = "soft_star"
-    SOFT_DARK_ID = "soft_dark"
-    INI_FILE_STAR_ID = "ini_file_star"
-    INI_FILE_DARK_ID = "ini_file_dark"
+def make_ini_params(project_name : str, ini_params : dict):
 
     # одна галактика
     with st.expander("Начальные условия (упрощённый режим)", expanded=True):
@@ -88,14 +89,23 @@ def make_ini_params(project_name : str, ini_params : dict):
 
     return ini_params
 
+def make_ini_params_table(ini_params : dict):
+    data_params = pd.DataFrame([{
+        "Масса звёздной компоненты": ini_params.get(MASS_STAR_ID),
+        "Масса тёмной компоненты": ini_params.get(MASS_DARK_ID),
+        "Сглаживание звёздной компоненты": ini_params.get(SOFT_STAR_ID),
+        "Сглаживание тёмной компоненты": ini_params.get(SOFT_DARK_ID),
+        "Файл звёздной компоненты": ini_params.get(INI_FILE_STAR_ID),
+        "Файл тёмной компоненты": ini_params.get(INI_FILE_DARK_ID),
+    }])
+    st.table(data_params.transpose(), hide_header=True)
+
+TIME_MAX_ID = "time_max"
+DT_SAVE_ID = "dt_save"
+DT_DYNAMICS_ID = "dt_dynamics"
 def make_sim_params(sim_params : dict):
 
     with st.expander("Параметры симуляции", expanded=True):
-
-        TIME_MAX_ID = "time_max"
-        DT_SAVE_ID = "dt_save"
-        DT_DYNAMICS_ID = "dt_dynamics"
-
         sim_params[TIME_MAX_ID] = st.number_input(
             "Время симуляции",
             value=sim_params.get(TIME_MAX_ID, 1.0),
@@ -116,6 +126,16 @@ def make_sim_params(sim_params : dict):
         )
 
     return sim_params
+
+def make_sim_params_table(sim_params : dict):
+    data_params = pd.DataFrame([{
+            "Время симуляции": sim_params.get("time_max"),
+            "Шаг сохранения": sim_params.get("dt_save"),
+            "Шаг интегрирования": sim_params.get("dt_dynamics"),
+        }]
+    )
+    st.table(data_params.transpose(), hide_header=True)
+
 
 
 def make_run_params():
