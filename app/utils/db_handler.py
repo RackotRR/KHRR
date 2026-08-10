@@ -38,9 +38,8 @@ def fill_calculation_db(
     calc_ini_path = os.path.join(calculation_path, CALCULATION_INI_DATABASE_NAME)
     calc_sim_path = os.path.join(calculation_path, CALCULATION_SIM_DATABASE_NAME)
 
-    with open(calc_ini_path, "w", "encoding=utf-8") as f:
+    with open(calc_ini_path, "w", encoding="utf-8") as f:
         json.dump(ini_dict, f, ensure_ascii=False, indent=4)
 
-    with open(calc_sim_path, "w", "encoding=utf-8") as f:
+    with open(calc_sim_path, "w", encoding="utf-8") as f:
         json.dump(sim_dict, f, ensure_ascii=False, indent=4)
-    

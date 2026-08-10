@@ -49,7 +49,7 @@ def create_new_project_directory(project_name : str) -> str:
 
     os.makedirs(project_dir)
     return project_dir
-    
+
 def create_ini_directory(project_name : str) -> str:
     check_project_exists(project_name)
 
@@ -76,6 +76,16 @@ def create_new_calculation_directory(project_name : str, calculation_name : str)
     os.makedirs(calc_dir)
     return calc_dir
 
+def create_particles_ini_file(project_name : str, ini_filename : str, data):
+    ini_dir = get_project_ini_path(project_name)
+    ini_path = os.path.join(ini_dir, f"{ini_filename}.txt")
+
+    if os.path.exists(ini_path):
+        raise FileExistsError("Файл компоненты с данным идентификатором уже добавлен.")
+
+    with open(ini_path, "wb") as f:
+        f.write(data)
+
 def scan_for_solvers() -> list[str]:
     solvers_raw = os.listdir(solvers_dir)
     solvers = []
@@ -84,3 +94,19 @@ def scan_for_solvers() -> list[str]:
         solvers.append(file_name)
 
     return solvers
+
+def scan_for_particles_ini(project_name : str) -> list[str]:
+    ini_dir = create_ini_directory(project_name)
+
+    ini_files_raw = os.listdir(ini_dir)
+    ini_files = []
+    for ini_file in ini_files_raw:
+        file_name, file_ext = os.path.splitext(ini_file)
+        ini_files.append(file_name)
+
+    return ini_files
+
+def scan_for_calculations(project_name : str) -> list[str]:
+    calculations_dir = create_calculations_directory(project_name)
+    calculations = os.listdir(calculations_dir)
+    return calculations

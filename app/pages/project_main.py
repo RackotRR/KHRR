@@ -1,6 +1,8 @@
 import streamlit as st
+import pandas as pd
 import pages.common.sidebar as CommonSidebar
 import pages.common.navigation as CommonNavigation
+import pages.common.calc_params as CommonCalcParams
 import utils.db_handler as DbHandler
 import utils.filesystem_handler as FilesystemHandler
 import os
@@ -15,17 +17,12 @@ if not "project_name" in st.query_params:
 PROJECT_NAME = st.query_params["project_name"]
 
 DbHandler.init_project_db(PROJECT_NAME)
-ini_dir = FilesystemHandler.create_ini_directory(PROJECT_NAME)
-calculations_dir = FilesystemHandler.create_calculations_directory(PROJECT_NAME)
-calculations = os.listdir(calculations_dir)
-
-
-NUMBER_FORMAT="%.5f"
+calculations = FilesystemHandler.scan_for_calculations(PROJECT_NAME)
 
 st.header(f"Проект '{PROJECT_NAME}'")
 
 CommonSidebar.make_sidebar()
-         
+
     # with st.container(border=True):
     #     st.markdown("#### Начальные условия")
 
@@ -62,32 +59,32 @@ CommonSidebar.make_sidebar()
 
     #         col_star.write(f"Частиц звёздного вещества: {count_star_particles if use_star_particles else 0}")
     #         col_dark.write(f"Частиц тёмного вещества: {count_dark_particles if use_dark_particles else 0}")
-            
+
     #         col_star.number_input(
-    #             "Масса звёздной компоненты", 
-    #             value=1.0, 
-    #             format=NUMBER_FORMAT, 
+    #             "Масса звёздной компоненты",
+    #             value=1.0,
+    #             format=NUMBER_FORMAT,
     #             help="Безразмерная масса",
     #             disabled=not use_star_particles
     #         )
     #         col_dark.number_input(
-    #             "Масса тёмной компоненты", 
-    #             value=1.0, 
-    #             format=NUMBER_FORMAT, 
+    #             "Масса тёмной компоненты",
+    #             value=1.0,
+    #             format=NUMBER_FORMAT,
     #             help="Безразмерная масса",
     #             disabled=not use_dark_particles
     #         )
 
     #         col_star.number_input(
-    #             "Сглаживание звёздной компоненты", 
-    #             value=0.004, 
+    #             "Сглаживание звёздной компоненты",
+    #             value=0.004,
     #             format=NUMBER_FORMAT,
     #             disabled=not use_star_particles
     #         )
     #         col_dark.number_input(
-    #             "Сглаживание тёмной компоненты", 
-    #             value=0.004, 
-    #             format=NUMBER_FORMAT, 
+    #             "Сглаживание тёмной компоненты",
+    #             value=0.004,
+    #             format=NUMBER_FORMAT,
     #             disabled=not use_dark_particles
     #         )
 
@@ -117,111 +114,20 @@ CommonSidebar.make_sidebar()
 with st.expander("Новый расчёт"):
     calculation_name = st.text_input("Название расчёта")
     no_calculation_name = (calculation_name is None) or len(calculation_name) == 0
-    
-    # одна галактика
-    with st.expander("Начальные условия (упрощённый режим)", expanded=True):
 
-        col_star, col_dark = st.columns(2)
+    st.session_state["ini_params"] = CommonCalcParams.make_ini_params(
+        PROJECT_NAME,
+        st.session_state.get("ini_params", {})
+    )
 
+    st.session_state["sim_params"] = CommonCalcParams.make_sim_params(
+        st.session_state.get("sim_params", {})
+    )
 
-        col_star.number_input(
-            "Масса звёздной компоненты", 
-            value=1.0,
-            format=NUMBER_FORMAT, 
-            help="Безразмерная масса",
-            key="mass_star"
-        )
-        col_dark.number_input(
-            "Масса тёмной компоненты", 
-            value=1.0, 
-            format=NUMBER_FORMAT, 
-            help="Безразмерная масса",
-            key="mass_dark"
-        )
+    CommonCalcParams.make_run_params()
 
-
-        col_star.number_input(
-            "Сглаживание звёздной компоненты", 
-            value=0.004, 
-            format=NUMBER_FORMAT,
-            key="soft_star"
-        )
-        col_dark.number_input(
-            "Сглаживание тёмной компоненты", 
-            value=0.004, 
-            format=NUMBER_FORMAT,
-            key="soft_dark"
-        )
-
-        ini_files_raw = os.listdir(ini_dir)
-        ini_files = [None]
-        for ini_file in ini_files_raw:
-            file_name, file_ext = os.path.splitext(ini_file)
-            ini_files.append(file_name)
-
-        star_file = col_star.selectbox("Файл звёздной компоненты", options=ini_files, key="ini_file_star")
-        dark_file = col_dark.selectbox("Файл тёмной компоненты", options=ini_files, key="ini_file_dark")
-
-        @st.dialog("Новый ini-файл компоненты")
-        def new_particles_ini_dialog():
-            particles_ini_name = st.text_input("Название файла компоненты")
-            no_ini_name = len(particles_ini_name) == 0
-
-            uploaded_file = st.file_uploader("Файл компоненты", type=["txt", ""])
-            no_uploaded_file = uploaded_file is None
-
-            create_particles_ini = st.button(
-                "Создать", 
-                use_container_width=True, 
-                disabled=no_ini_name or no_uploaded_file
-            )
-            if create_particles_ini:
-                try:
-                    if particles_ini_name in ini_files:
-                        raise FileExistsError("Файл компоненты с данным идентификатором уже добавлен.")
-                    
-                    dst_path = os.path.join(ini_dir, f"{particles_ini_name}.txt")
-                    with open(dst_path, "wb") as f:
-                        f.write(uploaded_file.getbuffer())
-
-                    st.rerun()
-                    
-                except FileExistsError as ex:
-                    st.error(f"Ошибка создания файла компоненты. { ex }")
-
-
-        if st.button("Импорт файла с частицами", use_container_width=True):
-            new_particles_ini_dialog()
-
-    with st.expander("Параметры симуляции", expanded=True):
-
-        time_max = st.number_input(
-            "Время симуляции",
-            format=NUMBER_FORMAT,
-            help="Безразмерное время"
-        )
-        dt_save = st.number_input(
-            "Шаг сохранения",
-            format=NUMBER_FORMAT,
-            help="Безразмерное время"
-        )
-        dt_dynamics = st.number_input(
-            "Шаг интегрирования",
-            format=NUMBER_FORMAT,
-            help="Безразмерное время"
-        )
-
-    with st.expander("Параметры запуска", expanded=True):
-        solvers = FilesystemHandler.scan_for_solvers()
-        st.selectbox("Используемый солвер", options=solvers)
-
-
-
-
-
-    
     create_new_calculation = st.button(
-        "Создать расчёт", 
+        "Создать расчёт",
         use_container_width=True,
         disabled=no_calculation_name
     )
@@ -229,13 +135,33 @@ with st.expander("Новый расчёт"):
 
         try:
             FilesystemHandler.create_new_calculation_directory(PROJECT_NAME, calculation_name)
+            DbHandler.fill_calculation_db(
+                PROJECT_NAME,
+                calculation_name,
+                st.session_state["ini_params"],
+                st.session_state["sim_params"])
             CommonNavigation.switch_to_calculation_main(PROJECT_NAME, calculation_name)
 
         except FileExistsError as ex:
             st.error(f"Ошибка создания расчёта. { ex }")
-            
 
+for calculation in calculations:
+    with st.expander(f"Расчёт '{calculation}'"):
 
+        with open("") as f:
+            json.
+
+        data_params = pd.DataFrame([{
+                "Время симуляции": 30.000,
+                "Шаг сохранения": 0.1,
+                "Шаг интегрирования": 0.001,
+            }]
+        )
+        st.table(data_params.transpose(), hide_header=True)
+
+        col1, col2 = st.columns(2)
+        col1.button("Перейти к расчёту", use_container_width=True)
+        col2.button("Создать копию расчёта", use_container_width=True)
 
 
 # with st.expander("Расчёт 'Региональная конференция 2026'"):
