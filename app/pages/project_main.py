@@ -5,7 +5,6 @@ import pages.common.navigation as CommonNavigation
 import pages.common.calc_params as CommonCalcParams
 import utils.db_handler as DbHandler
 import utils.filesystem_handler as FilesystemHandler
-import os
 
 st.title("KHRR")
 
@@ -19,9 +18,6 @@ PROJECT_NAME = st.query_params["project_name"]
 DbHandler.init_project_db(PROJECT_NAME)
 calculations = FilesystemHandler.scan_for_calculations(PROJECT_NAME)
 
-st.header(f"Проект '{PROJECT_NAME}'")
-
-CommonSidebar.make_sidebar()
 
     # with st.container(border=True):
     #     st.markdown("#### Начальные условия")
@@ -109,77 +105,90 @@ CommonSidebar.make_sidebar()
 
     #         st.write(f"Частиц всего: {count_star_particles + count_dark_particles}")
 
+def fill_in_calculation_state(
+        ini_params : dict,
+        sim_params : dict,
+        calculation_name : str
+):
+    # по project_name + calc_name будем определять, надо ли подгружать данные из бд
+    st.session_state["project_name"] = PROJECT_NAME
+    st.session_state["calc_name"] = calculation_name
+    st.session_state["ini_params"] = ini_params
+    st.session_state["sim_params"] = sim_params
 
+@st.dialog("Создать расчёт")
+def create_calc_dialog(
+    ini_params : dict,
+    sim_params : dict
+):
+    calculation_name = st.text_input("Название расчёта", value=st.session_state.get("calc_name", ""))
+    no_calc_name = len(calculation_name) == 0
 
-with st.expander("Новый расчёт"):
-    calculation_name = st.text_input("Название расчёта")
-    no_calculation_name = (calculation_name is None) or len(calculation_name) == 0
-
-    st.session_state["ini_params"] = CommonCalcParams.make_ini_params(
-        PROJECT_NAME,
-        st.session_state.get("ini_params", {})
-    )
-
-    st.session_state["sim_params"] = CommonCalcParams.make_sim_params(
-        st.session_state.get("sim_params", {})
-    )
-
-    CommonCalcParams.make_run_params()
-
-    create_new_calculation = st.button(
-        "Создать расчёт",
+    create_calc = st.button(
+        "Создать копию расчёта",
         use_container_width=True,
-        disabled=no_calculation_name
+        disabled=no_calc_name
     )
-    if create_new_calculation:
-
+    if create_calc:
         try:
             FilesystemHandler.create_new_calculation_directory(PROJECT_NAME, calculation_name)
             DbHandler.fill_calculation_db(
                 PROJECT_NAME,
                 calculation_name,
-                st.session_state["ini_params"],
-                st.session_state["sim_params"])
+                ini_params,
+                sim_params)
+            fill_in_calculation_state(
+                ini_params,
+                sim_params,
+                calculation_name)
             CommonNavigation.switch_to_calculation_main(PROJECT_NAME, calculation_name)
-
         except FileExistsError as ex:
             st.error(f"Ошибка создания расчёта. { ex }")
 
-for calculation in calculations:
-    with st.expander(f"Расчёт '{calculation}'"):
+def make_new_calc():
+    with st.expander("Новый расчёт"):
+        ini_params = CommonCalcParams.make_ini_params(PROJECT_NAME, {})
+        sim_params = CommonCalcParams.make_sim_params({})
+        CommonCalcParams.make_run_params()
 
-        with open("") as f:
-            json.
-
-        data_params = pd.DataFrame([{
-                "Время симуляции": 30.000,
-                "Шаг сохранения": 0.1,
-                "Шаг интегрирования": 0.001,
-            }]
+        create_new_calculation = st.button(
+            "Создать расчёт",
+            use_container_width=True
         )
-        st.table(data_params.transpose(), hide_header=True)
+        if create_new_calculation:
+            create_calc_dialog(ini_params, sim_params)
 
-        col1, col2 = st.columns(2)
-        col1.button("Перейти к расчёту", use_container_width=True)
-        col2.button("Создать копию расчёта", use_container_width=True)
+def make_existing_calcs():
+
+    for calculation_name in calculations:
+        with st.expander(f"Расчёт '{calculation_name}'"):
+            ini_params = CommonCalcParams.read_calculation_ini_params(PROJECT_NAME, calculation_name)
+            sim_params = CommonCalcParams.read_calculation_sim_params(PROJECT_NAME, calculation_name)
+
+            data_params = pd.DataFrame([{
+                    "Время симуляции": sim_params.get("time_max"),
+                    "Шаг сохранения": sim_params.get("dt_save"),
+                    "Шаг интегрирования": sim_params.get("dt_dynamics"),
+                }]
+            )
+            st.table(data_params.transpose(), hide_header=True)
+
+            col1, col2 = st.columns(2)
+
+            if col1.button("Перейти к расчёту", use_container_width=True, key=f"go_to_calc_{calculation_name}"):
+                fill_in_calculation_state(
+                    ini_params,
+                    sim_params,
+                    calculation_name)
+                CommonNavigation.switch_to_calculation_main(PROJECT_NAME, calculation_name)
+
+            if col2.button("Создать копию расчёта", use_container_width=True, key=f"create_copy_calc_{calculation_name}"):
+                st.toast("TODO: сделать нумерованные копии")
+                st.session_state["calc_name"] = calculation_name + "_copy"
+                create_calc_dialog(ini_params, sim_params)
 
 
-# with st.expander("Расчёт 'Региональная конференция 2026'"):
-
-#     data_general = pd.DataFrame([{
-#         "Солвер": "v0.0.1-reg_conf",
-#         "Дата последнего расчёта": "2026-07-15"
-#     }])
-#     st.table(data_general.transpose(), hide_header=True)
-
-#     data_params = pd.DataFrame([{
-#             "Время симуляции": 30.000,
-#             "Шаг сохранения": 0.1,
-#             "Шаг интегрирования": 0.001,
-#         }]
-#     )
-#     st.table(data_params.transpose(), hide_header=True)
-
-#     col1, col2 = st.columns(2)
-#     col1.button("Перейти к расчёту", use_container_width=True)
-#     col2.button("Создать копию расчёта", use_container_width=True)
+st.header(f"Проект '{PROJECT_NAME}'")
+make_new_calc()
+make_existing_calcs()
+CommonSidebar.make_sidebar()

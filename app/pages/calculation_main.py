@@ -23,7 +23,10 @@ CALCULATION_NAME = st.query_params["calculation_name"]
 
 st.header(f"Расчёт '{PROJECT_NAME} : {CALCULATION_NAME}'")
 
-CommonSidebar.make_sidebar()
+CommonSidebar.make_sidebar({
+    CommonSidebar.CAN_GO_TO_PROJECT_PAGE: True,
+    CommonSidebar.HOME_PROJECT: PROJECT_NAME
+})
 
 st.session_state["ini_params"] = CommonCalcParams.make_ini_params(
     PROJECT_NAME,

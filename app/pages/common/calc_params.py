@@ -1,6 +1,8 @@
 import streamlit as st
 import os
+import json
 import utils.filesystem_handler as FilesystemHandler
+import utils.db_handler as DbHandler
 
 
 
@@ -122,3 +124,36 @@ def make_run_params():
         solvers = FilesystemHandler.scan_for_solvers()
         st.selectbox("Используемый солвер", options=solvers)
 
+def read_calculation_ini_params(
+        project_name : str,
+        calculation_name : str
+    ):
+
+    calculation_path = FilesystemHandler.get_project_calculation_path(project_name, calculation_name)
+    calculation_ini_path = os.path.join(calculation_path, DbHandler.CALCULATION_INI_DATABASE_NAME)
+
+    ini_params = {}
+    if os.path.exists(calculation_ini_path):
+        with open(calculation_ini_path) as f:
+            ini_params = json.load(f)
+    else:
+        st.error(f"В расчёте отсутствует {DbHandler.CALCULATION_INI_DATABASE_NAME}")
+
+    return ini_params
+
+def read_calculation_sim_params(
+        project_name : str,
+        calculation_name : str
+    ):
+
+    calculation_path = FilesystemHandler.get_project_calculation_path(project_name, calculation_name)
+    calculation_sim_path = os.path.join(calculation_path, DbHandler.CALCULATION_SIM_DATABASE_NAME)
+
+    sim_params = {}
+    if os.path.exists(calculation_sim_path):
+        with open(calculation_sim_path) as f:
+            sim_params = json.load(f)
+    else:
+        st.error(f"В расчёте отсутствует {DbHandler.CALCULATION_SIM_DATABASE_NAME}")
+
+    return sim_params
