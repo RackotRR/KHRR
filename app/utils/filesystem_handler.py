@@ -7,7 +7,7 @@ if base_path is None:
 if base_path is None:
     base_path = os.curdir
 
-app_dir = os.path.join(base_path, "KHRR")
+app_dir = os.path.join(base_path, "RRGalaxSim")
 os.makedirs(app_dir, exist_ok=True)
 
 logs_dir = os.path.join(app_dir, "logs")

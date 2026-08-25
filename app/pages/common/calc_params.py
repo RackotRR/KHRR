@@ -72,17 +72,39 @@ def make_ini_params(project_name : str, ini_params : dict):
             format=NUMBER_FORMAT
         )
 
+        def to_relative_ini_path(abs_ini_path : str | None) -> str | None:
+            if abs_ini_path is None:
+                return None
+            else:
+                filename = os.path.basename(abs_ini_path)
+                name_without_ext = os.path.splitext(filename)[0]
+                return name_without_ext
+
+        def to_absolute_ini_path(relative_ini_path : str | None) -> str | None:
+            if relative_ini_path is None:
+                return None
+            else:
+                return os.path.join(
+                    FilesystemHandler.get_project_ini_path(project_name),
+                    relative_ini_path + ".txt")
+
         ini_options = [None] + FilesystemHandler.scan_for_particles_ini(project_name)
-        star_ini_index = ini_options.index(ini_params.get(INI_FILE_STAR_ID))
-        dark_ini_index = ini_options.index(ini_params.get(INI_FILE_DARK_ID))
-        ini_params[INI_FILE_STAR_ID] = col_star.selectbox(
+        star_ini_index = ini_options.index(to_relative_ini_path(ini_params.get(INI_FILE_STAR_ID)))
+        dark_ini_index = ini_options.index(to_relative_ini_path(ini_params.get(INI_FILE_DARK_ID)))
+
+
+        ini_star_selection = col_star.selectbox(
             "Файл звёздной компоненты",
             index=star_ini_index,
             options=ini_options)
-        ini_params[INI_FILE_DARK_ID] = col_dark.selectbox(
+        init_dark_selection = col_dark.selectbox(
             "Файл тёмной компоненты",
             index=dark_ini_index,
             options=ini_options)
+
+
+        ini_params[INI_FILE_STAR_ID] = to_absolute_ini_path(ini_star_selection)
+        ini_params[INI_FILE_DARK_ID] = to_absolute_ini_path(init_dark_selection)
 
         if st.button("Импорт файла с частицами", use_container_width=True):
             new_particles_ini_dialog(project_name)

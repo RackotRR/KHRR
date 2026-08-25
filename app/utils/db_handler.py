@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import json
 
-GENERAL_DATABASE_NAME = "khrr.db"
+GENERAL_DATABASE_NAME = "rrgsim.db"
 PROJECT_DATABASE_NAME = "project.db"
 CALCULATION_INI_DATABASE_NAME = "ini.json"
 CALCULATION_SIM_DATABASE_NAME = "sim.json"

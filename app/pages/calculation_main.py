@@ -5,7 +5,7 @@ import utils.db_handler as DbHandler
 import utils.filesystem_handler as FilesystemHandler
 import os
 
-st.title("KHRR")
+st.title("RRGalax[S]im")
 
 if not "project_name" in st.query_params:
     st.error("В параметрах запроса не указано название проекта.")

@@ -5,7 +5,7 @@ import pages.common.sidebar as CommonSidebar
 import utils.db_handler as DbHandler
 import utils.filesystem_handler as FilesystemHandler
 
-st.title("KHRR")
+st.title("RRGalax[S]im")
 
 solvers = FilesystemHandler.scan_for_solvers()
 
@@ -67,6 +67,6 @@ with st.container(border=True):
                 st.error("Not implemented")
 
 
-CommonSidebar.make_sidebar({ 
+CommonSidebar.make_sidebar({
     CommonSidebar.CAN_ADD_SOLVER: False
 })
