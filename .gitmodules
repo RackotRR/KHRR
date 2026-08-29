@@ -10,6 +10,15 @@
 [submodule "solver/extern/fmtlib/fmt"]
 	path = solver/extern/fmtlib/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "solver/extern/tl/expected"]
+	path = solver/extern/tl/expected
+	url = https://github.com/TartanLlama/expected.git
+[submodule "solver/extern/spdlog/spdlog"]
+	path = solver/extern/spdlog/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "solver/extern/csv-parser/csv-parser"]
+	path = solver/extern/csv-parser/csv-parser
+	url = https://github.com/vincentlaucsb/csv-parser.git
 [submodule "solver/extern/catch2/catch2"]
 	path = solver/extern/catch2/catch2
 	url = https://github.com/catchorg/Catch2.git
