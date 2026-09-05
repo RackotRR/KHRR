@@ -32,12 +32,18 @@ namespace rrgsim::io {
     void to_json(nlohmann::json& j, const IniGalaxyData& galaxy_data);
     void from_json(const nlohmann::json& j, IniGalaxyData& galaxy_data);
 
-    tl::expected<bool, std::string> read_particles_data_component(
+    /// @brief
+    /// @param component_data
+    /// @param particles_data
+    /// @return Количество прочитанных частиц, либо ошибка
+    tl::expected<size_t, std::string>
+    read_particles_data_component(
         const IniGalaxyComponentData& component_data,
         ParticlesData& particles_data
     );
 
-    tl::expected<ParticlesData, std::string> read_simple_particles_data(
+    tl::expected<ParticlesData, std::string>
+    read_simple_particles_data(
         const fs::path& ini_json_path
     );
 

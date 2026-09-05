@@ -4,6 +4,8 @@
 
 namespace rrgsim::log {
 
+    inline std::filesystem::path WORKING_DIR;
     void setup_logging(const std::filesystem::path& working_dir);
+
 
 } // namespace rrgsim::log

@@ -8,7 +8,7 @@ __host__ __device__
 double dot(const T& vec1, const T& vec2);
 
 template<>
-__host__ __device__
+inline __host__ __device__
 double dot(const double2& vec1, const double2& vec2) {
 	return
 		vec1.x * vec2.x +
@@ -16,7 +16,7 @@ double dot(const double2& vec1, const double2& vec2) {
 }
 
 template<>
-__host__ __device__
+inline __host__ __device__
 double dot(const double3& vec1, const double3& vec2) {
 	return
 		vec1.x * vec2.x +
@@ -28,6 +28,16 @@ template<typename T>
 __host__ __device__
 double norm(const T& vec) {
 	return sqrt(dot(vec, vec));
+}
+
+inline __host__ __device__
+double distance(const double3& v1, const double3& v2) {
+	double3 r = make_double3(
+		v2.x - v1.x,
+		v2.y - v1.y,
+		v2.z - v1.z
+	);
+	return sqrt(dot(r, r));
 }
 
 template<typename T>

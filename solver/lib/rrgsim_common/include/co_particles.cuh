@@ -1,6 +1,7 @@
 #pragma once
 #include "cuda_runtime.h"
 #include <vector>
+#include "co_device_structs.cuh"
 
 namespace rrgsim::common {
 
@@ -8,7 +9,9 @@ namespace rrgsim::common {
         std::vector<double3> pos;
         std::vector<double3> vel;
         std::vector<double> mass;
-        std::vector<double> eps2;
+        std::vector<double> soft2;
+
+        CommonParams params;
     };
 
 } // rrgsim::common

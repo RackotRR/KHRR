@@ -39,7 +39,7 @@ namespace rrgsim::io {
     }
 
 
-    tl::expected<bool, std::string>
+    tl::expected<size_t, std::string>
     read_particles_data_component(
         const IniGalaxyComponentData& component_data,
         ParticlesData& particles_data
@@ -69,7 +69,7 @@ namespace rrgsim::io {
         particles_data.pos.reserve(N);
         particles_data.vel.reserve(N);
         particles_data.mass.reserve(N);
-        particles_data.eps2.reserve(N);
+        particles_data.soft2.reserve(N);
         spdlog::debug("Current array sizes: {}", prev_N);
         spdlog::debug("New data size: {}", ini_N);
         spdlog::debug("New array sizes: {}", N);
@@ -77,7 +77,7 @@ namespace rrgsim::io {
         auto& pos = particles_data.pos;
         auto& vel = particles_data.vel;
         auto& mass = particles_data.mass;
-        auto& eps2 = particles_data.eps2;
+        auto& soft2 = particles_data.soft2;
 
         while (reader.read_row(row)) {
             pos.push_back(
@@ -97,7 +97,7 @@ namespace rrgsim::io {
             );
 
             mass.push_back(component_data.mass);
-            eps2.push_back(component_data.soft);
+            soft2.push_back(component_data.soft * component_data.soft);
 
             if (pos.size() % 100'000 == 0) {
                 spdlog::info("Read {}/{} row", pos.size(), N);
@@ -110,7 +110,7 @@ namespace rrgsim::io {
             );
         }
 
-        return true;
+        return ini_N;
     }
 
     tl::expected<ParticlesData, std::string>
@@ -147,6 +147,8 @@ namespace rrgsim::io {
                 auto expected_result = read_particles_data_component(component_data, particles_data);
                 EXPECTED_CHECK(expected_result);
             }
+
+            particles_data.params.ntotal = particles_data.pos.size();
 
             spdlog::info("{} particles loaded", particles_data.pos.size());
             return particles_data;

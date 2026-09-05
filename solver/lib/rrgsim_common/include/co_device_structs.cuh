@@ -5,8 +5,7 @@ namespace rrgsim::common {
 constexpr int BLOCK_SIZE = 256;
 
 struct CommonParams {
-    int ntotal;
-    int nstars;
+    int ntotal = 0;
 };
 
 __constant__ CommonParams params_;

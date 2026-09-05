@@ -12,42 +12,40 @@ namespace rrgsim::nbody {
 	using rrgsim::common::cube;
 	using rrgsim::common::dot;
 
-//-----Force_Nbody kernel--------
-__global__ void acceleration_kernel(
+__global__ void acceleration_kernel_(
 	double3* acc,
-	const double3* pos_i,
-	const double3* pos_j,
-	const double* mass_j, // G * m_j
-	const double* eps2_j
+	const double3* pos,
+	const double* mass,
+	const double* soft2
 )
 {
 	__shared__ double3 pos_other[BLOCK_SIZE];
 	__shared__ double mass_other[BLOCK_SIZE];
-	__shared__ double eps2_other[BLOCK_SIZE];
+	__shared__ double soft2_other[BLOCK_SIZE];
 	cuda::std::memset(pos_other, 0, sizeof(double3) * BLOCK_SIZE);
 	cuda::std::memset(mass_other, 0, sizeof(double) * BLOCK_SIZE);
-	cuda::std::memset(eps2_other, 0, sizeof(double) * BLOCK_SIZE);
+	cuda::std::memset(soft2_other, 0, sizeof(double) * BLOCK_SIZE);
 
 	double3 f_sum = make_double3(0.0, 0.0, 0.0);
 	int i_curr_global = threadIdx.x + blockIdx.x * blockDim.x;
 
 	double3 p_curr;
-	double eps2_curr;
+	double soft2_curr;
 	if (i_curr_global < params_.ntotal) {
-		p_curr = pos_i[i_curr_global];
-		eps2_curr = eps2_j[i_curr_global];
+		p_curr = pos[i_curr_global];
+		soft2_curr = soft2[i_curr_global];
 	}
 	else {
 		p_curr = make_double3(0., 0., 0.);
-		eps2_curr = 0.;
+		soft2_curr = 0.;
 	}
 
 	for (int block = 0; block < gridDim.x; block++) {
 		int i_other_global = threadIdx.x + block * blockDim.x;
 		if (i_other_global < params_.ntotal) {
-			pos_other[threadIdx.x] = pos_j[i_other_global];
-			mass_other[threadIdx.x] = mass_j[i_other_global];
-			eps2_other[threadIdx.x] = eps2_j[i_other_global];
+			pos_other[threadIdx.x] = pos[i_other_global];
+			mass_other[threadIdx.x] = mass[i_other_global];
+			soft2_other[threadIdx.x] = soft2[i_other_global];
 		}
 
 		__syncthreads();
@@ -60,7 +58,7 @@ __global__ void acceleration_kernel(
 			);
 			double denominator = sqrt(
 				dot(dp, dp) +
-				0.5 * (eps2_curr + eps2_other[i_other_local])
+				0.5 * (soft2_curr + soft2_other[i_other_local])
 			);
 			double k = mass_other[i_other_local] / cube(denominator);
 			f_sum.x += dp.x * k;
@@ -81,13 +79,75 @@ __global__ void acceleration_kernel(
 	}
 }
 
+__global__ void grav_kernel_(
+	double* grav,
+	const double3* pos,
+	const double* mass,
+	const double* soft2
+)
+{
+	__shared__ double3 pos_other[BLOCK_SIZE];
+	__shared__ double mass_other[BLOCK_SIZE];
+	__shared__ double soft2_other[BLOCK_SIZE];
+	cuda::std::memset(pos_other, 0, sizeof(double3) * BLOCK_SIZE);
+	cuda::std::memset(mass_other, 0, sizeof(double) * BLOCK_SIZE);
+	cuda::std::memset(soft2_other, 0, sizeof(double) * BLOCK_SIZE);
+
+	double grav_sum = 0.;
+	int i_curr_global = threadIdx.x + blockIdx.x * blockDim.x;
+
+	double3 p_curr;
+	double soft2_curr;
+	if (i_curr_global < params_.ntotal) {
+		p_curr = pos[i_curr_global];
+		soft2_curr = soft2[i_curr_global];
+	}
+	else {
+		p_curr = make_double3(0., 0., 0.);
+		soft2_curr = 0.;
+	}
+
+	for (int block = 0; block < gridDim.x; ++block) {
+		int i_other_global = threadIdx.x + block * blockDim.x;
+		if (i_other_global < params_.ntotal) {
+			pos_other[threadIdx.x] = pos[i_other_global];
+			mass_other[threadIdx.x] = mass[i_other_global];
+			soft2_other[threadIdx.x] = soft2[i_other_global];
+		}
+
+		__syncthreads();
+
+		for (int i_other_local = 0; i_other_local < blockDim.x; ++i_other_local) {
+			double3 dp = make_double3(
+				pos_other[i_other_local].x - p_curr.x,
+				pos_other[i_other_local].y - p_curr.y,
+				pos_other[i_other_local].z - p_curr.z
+			);
+
+			grav_sum += mass_other[i_other_local] / sqrt(
+				dot(dp, dp) +
+				0.5 * (soft2_curr + soft2_other[i_other_local])
+			);
+		}
+
+		__syncthreads();
+
+	}
+
+	// fix self-gravity
+	if (i_curr_global < params_.ntotal) {
+		double grav_self = mass[i_curr_global] / sqrt(soft2_curr);
+		grav[i_curr_global] = grav_self - grav_sum;
+	}
+}
+
 /// @brief Шаг по координате
 /// @param acc Ускорение (a_{i})
 /// @param vel Скорость (v_{i})
 /// @param [in, out] pos Координата (p_{i} -> p_{i+1})
 /// @param vel_predict Предположение по скорости (v_{i+1}^{*})
 /// @param dt Шаг по времени
-__global__ void predict_step(
+__global__ void predict_step_(
 	const double3* acc,
 	const double3* vel,
 	double3* pos,
@@ -124,7 +184,7 @@ __global__ void predict_step(
 /// @param vel Скорость (v_{i} -> v_{i+1})
 /// @param vel_predict Предположение по скорости (v_{i+1}^{*})
 /// @param dt Шаг по времени
-__global__ void correct_step(
+__global__ void correct_step_(
 	const double3* acc_new,
 	double3* vel,
 	const double3* vel_predict,

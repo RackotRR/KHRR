@@ -22,6 +22,7 @@ target_link_libraries(rrgsim_common_properties
         CUDA::cudart
         CCCL::libcudacxx
         spdlog
+        RR
 )
 target_link_options(rrgsim_common_properties
     INTERFACE
