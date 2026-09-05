@@ -106,6 +106,10 @@ void integrate(
         context_,
         sim_params
     );
+    rrgsim::nbody::nbody_acceleration(
+        context_,
+        sim_params
+    );
     context->grav = context_->grav_.to_vector();
     const auto base_conservation_info = rrgsim::nbody::calc_conservation(context);
 
