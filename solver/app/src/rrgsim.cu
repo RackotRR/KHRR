@@ -11,20 +11,45 @@
 #include "nbody.cuh"
 
 void print_conservation(
+    const rrgsim::nbody::ConservationInfo& info
+)
+{
+    spdlog::info("-- momentum:");
+    spdlog::info("\t x {}", info.momentum.x);
+    spdlog::info("\t y {}", info.momentum.y);
+    spdlog::info("\t z {}", info.momentum.z);
+
+    spdlog::info("-- angular momentum:");
+    spdlog::info("\t x {}", info.angular.x);
+    spdlog::info("\t y {}", info.angular.y);
+    spdlog::info("\t z {}", info.angular.z);
+
+    spdlog::info("-- energy: {}", info.E());
+    spdlog::info("\t keenetic {}", info.Ek);
+    spdlog::info("\t potential {}", info.Ep);
+}
+void print_conservation(
     const rrgsim::nbody::ConservationInfo& info0,
     const rrgsim::nbody::ConservationInfo& info
 )
 {
-    double momentum_diff = rrgsim::common::distance(
+    using rrgsim::common::distance;
+    using rrgsim::common::norm;
+
+    double momentum_diff = distance(
         info.momentum,
         info0.momentum
     );
-    double angular_momentum_diff = rrgsim::common::distance(
+    double angular_momentum_diff = distance(
         info.angular,
         info0.angular
     );
 
-    spdlog::info("-- momentum: {}", momentum_diff);
+    spdlog::info(
+        "-- momentum: diff {} ; rel {}",
+        momentum_diff,
+        norm(info.momentum) / norm(info.momentum) - 1.
+    );
     spdlog::trace(
         "\t {} -> {}",
         info0.momentum.x,
@@ -41,7 +66,11 @@ void print_conservation(
         info.momentum.z
     );
 
-    spdlog::info("-- angular momentum: {}", angular_momentum_diff);
+    spdlog::info(
+        "-- angular momentum: diff {} ; rel {}",
+        angular_momentum_diff,
+        norm(info.angular) / norm(info0.angular) - 1.
+    );
     spdlog::trace(
         "\t {} -> {}",
         info0.angular.x,
@@ -59,7 +88,7 @@ void print_conservation(
     );
 
     spdlog::info(
-        "-- energy keenetic: {}", info.Ek - info0.Ek
+        "-- energy keenetic: diff {}", info.Ek - info0.Ek
     );
     spdlog::trace(
         "\t {} -> {}",
@@ -67,7 +96,7 @@ void print_conservation(
         info.Ek
     );
     spdlog::info(
-        "-- energy potential: {}", info.Ep - info0.Ep
+        "-- energy potential: diff {}", info.Ep - info0.Ep
     );
     spdlog::trace(
         "\t {} -> {}",
@@ -75,10 +104,12 @@ void print_conservation(
         info.Ep
     );
 
-    double energy_total = 0.5 * (info.Ep + info.Ek);
-    double energy_total0 = 0.5 * (info0.Ep + info0.Ek);
+    double energy_total = info.E();
+    double energy_total0 = info0.E();
     spdlog::info(
-        "-- energy total: {}", energy_total - energy_total0
+        "-- energy total: diff {} ; rel {}",
+        energy_total - energy_total0,
+        energy_total / energy_total0 - 1.
     );
     spdlog::trace(
         "\t {} -> {}",
@@ -112,6 +143,7 @@ void integrate(
     );
     context->grav = context_->grav_.to_vector();
     const auto base_conservation_info = rrgsim::nbody::calc_conservation(context);
+    print_conservation(base_conservation_info);
 
     double time = 0.;
     double next_save = time + sim_params.dt_save;
@@ -181,10 +213,15 @@ int main(int argc, const char** argv) {
             return 0;
         }
 
-        ::integrate(
-            std::move(expected_particles_data).value(),
-            std::move(expected_sim_params).value()
-        );
+        try {
+            ::integrate(
+                std::move(expected_particles_data).value(),
+                std::move(expected_sim_params).value()
+            );
+        }
+        catch (const std::exception& ex) {
+            spdlog::error("Exception: {}", ex.what());
+        }
     }
 
     return 0;

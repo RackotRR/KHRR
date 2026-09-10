@@ -12,7 +12,8 @@ namespace rrgsim::nbody {
 	using rrgsim::common::cube;
 	using rrgsim::common::dot;
 
-__global__ void acceleration_kernel_(
+/// @brief Расчёт ускорения с учётом того, что количество частиц кратно размеру блока
+__global__ void acceleration_kernel_blocked_(
 	double3* acc,
 	const double3* pos,
 	const double* mass,
@@ -22,45 +23,32 @@ __global__ void acceleration_kernel_(
 	__shared__ double3 pos_other[BLOCK_SIZE];
 	__shared__ double mass_other[BLOCK_SIZE];
 	__shared__ double soft2_other[BLOCK_SIZE];
-	cuda::std::memset(pos_other, 0, sizeof(double3) * BLOCK_SIZE);
-	cuda::std::memset(mass_other, 0, sizeof(double) * BLOCK_SIZE);
-	cuda::std::memset(soft2_other, 0, sizeof(double) * BLOCK_SIZE);
 
 	double3 f_sum = make_double3(0.0, 0.0, 0.0);
-	int i_curr_global = threadIdx.x + blockIdx.x * blockDim.x;
 
-	double3 p_curr;
-	double soft2_curr;
-	if (i_curr_global < params_.ntotal) {
-		p_curr = pos[i_curr_global];
-		soft2_curr = soft2[i_curr_global];
-	}
-	else {
-		p_curr = make_double3(0., 0., 0.);
-		soft2_curr = 0.;
-	}
+	const int i_curr_global = threadIdx.x + blockIdx.x * blockDim.x;
+	const double3 p_curr = pos[i_curr_global];
+	const double soft2_curr = soft2[i_curr_global];
 
 	for (int block = 0; block < gridDim.x; block++) {
-		int i_other_global = threadIdx.x + block * blockDim.x;
-		if (i_other_global < params_.ntotal) {
-			pos_other[threadIdx.x] = pos[i_other_global];
-			mass_other[threadIdx.x] = mass[i_other_global];
-			soft2_other[threadIdx.x] = soft2[i_other_global];
-		}
+		const int i_other_global = threadIdx.x + block * blockDim.x;
+		pos_other[threadIdx.x] = pos[i_other_global];
+		mass_other[threadIdx.x] = mass[i_other_global];
+		soft2_other[threadIdx.x] = soft2[i_other_global];
 
 		__syncthreads();
 
 		for (int i_other_local = 0; i_other_local < blockDim.x; ++i_other_local) {
-			double3 dp = make_double3(
+			const double3 dp = make_double3(
 				pos_other[i_other_local].x - p_curr.x,
 				pos_other[i_other_local].y - p_curr.y,
 				pos_other[i_other_local].z - p_curr.z
 			);
-			double denominator = sqrt(
+			const double denominator = 1. / sqrt(
 				dot(dp, dp) +
 				0.5 * (soft2_curr + soft2_other[i_other_local])
 			);
-			double k = mass_other[i_other_local] / cube(denominator);
+			const double k = mass_other[i_other_local] * cube(denominator);
 			f_sum.x += dp.x * k;
 			f_sum.y += dp.y * k;
 			f_sum.z += dp.z * k;
@@ -70,16 +58,10 @@ __global__ void acceleration_kernel_(
 
 	}
 
-	if (i_curr_global < params_.ntotal) {
-		acc[i_curr_global] = make_double3(
-			acc[i_curr_global].x + f_sum.x,
-			acc[i_curr_global].y + f_sum.y,
-			acc[i_curr_global].z + f_sum.z
-		);
-	}
+	acc[i_curr_global] = f_sum;
 }
 
-__global__ void grav_kernel_(
+__global__ void grav_kernel_blocked_(
 	double* grav,
 	const double3* pos,
 	const double* mass,
@@ -89,41 +71,27 @@ __global__ void grav_kernel_(
 	__shared__ double3 pos_other[BLOCK_SIZE];
 	__shared__ double mass_other[BLOCK_SIZE];
 	__shared__ double soft2_other[BLOCK_SIZE];
-	cuda::std::memset(pos_other, 0, sizeof(double3) * BLOCK_SIZE);
-	cuda::std::memset(mass_other, 0, sizeof(double) * BLOCK_SIZE);
-	cuda::std::memset(soft2_other, 0, sizeof(double) * BLOCK_SIZE);
 
 	double grav_sum = 0.;
-	int i_curr_global = threadIdx.x + blockIdx.x * blockDim.x;
 
-	double3 p_curr;
-	double soft2_curr;
-	if (i_curr_global < params_.ntotal) {
-		p_curr = pos[i_curr_global];
-		soft2_curr = soft2[i_curr_global];
-	}
-	else {
-		p_curr = make_double3(0., 0., 0.);
-		soft2_curr = 0.;
-	}
+	const int i_curr_global = threadIdx.x + blockIdx.x * blockDim.x;
+	const double3 p_curr = pos[i_curr_global];
+	const double soft2_curr = soft2[i_curr_global];
 
-	for (int block = 0; block < gridDim.x; ++block) {
-		int i_other_global = threadIdx.x + block * blockDim.x;
-		if (i_other_global < params_.ntotal) {
-			pos_other[threadIdx.x] = pos[i_other_global];
-			mass_other[threadIdx.x] = mass[i_other_global];
-			soft2_other[threadIdx.x] = soft2[i_other_global];
-		}
+	for (int block = 0; block < gridDim.x; block++) {
+		const int i_other_global = threadIdx.x + block * blockDim.x;
+		pos_other[threadIdx.x] = pos[i_other_global];
+		mass_other[threadIdx.x] = mass[i_other_global];
+		soft2_other[threadIdx.x] = soft2[i_other_global];
 
 		__syncthreads();
 
 		for (int i_other_local = 0; i_other_local < blockDim.x; ++i_other_local) {
-			double3 dp = make_double3(
+			const double3 dp = make_double3(
 				pos_other[i_other_local].x - p_curr.x,
 				pos_other[i_other_local].y - p_curr.y,
 				pos_other[i_other_local].z - p_curr.z
 			);
-
 			grav_sum += mass_other[i_other_local] / sqrt(
 				dot(dp, dp) +
 				0.5 * (soft2_curr + soft2_other[i_other_local])
@@ -134,11 +102,12 @@ __global__ void grav_kernel_(
 
 	}
 
-	// fix self-gravity
-	if (i_curr_global < params_.ntotal) {
-		double grav_self = mass[i_curr_global] / sqrt(soft2_curr);
-		grav[i_curr_global] = grav_self - grav_sum;
-	}
+	// некоторые источники предлагают исключать самогравитацию:
+	// double grav_self = mass[i_curr_global] / sqrt(soft2_curr);
+	// grav[i_curr_global] = grav_self - grav_sum;
+
+	// но в исходном коде этого нет, и для совпадения не использую:
+	grav[i_curr_global] = -grav_sum;
 }
 
 /// @brief Шаг по координате

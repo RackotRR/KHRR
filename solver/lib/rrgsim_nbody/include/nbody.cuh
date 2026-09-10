@@ -51,6 +51,10 @@ namespace rrgsim::nbody {
         double Ep = 0;
         double3 momentum = make_double3(0., 0., 0.);
         double3 angular = make_double3(0., 0., 0.);
+
+        double E() const {
+            return Ek + Ep;
+        }
     };
 
     ConservationInfo calc_conservation(

@@ -74,6 +74,9 @@ namespace rrgsim::io {
         spdlog::debug("New data size: {}", ini_N);
         spdlog::debug("New array sizes: {}", N);
 
+        const double particle_mass = component_data.mass / N;
+        const double particle_soft2 = component_data.soft * component_data.soft;
+
         auto& pos = particles_data.pos;
         auto& vel = particles_data.vel;
         auto& mass = particles_data.mass;
@@ -96,8 +99,8 @@ namespace rrgsim::io {
                 )
             );
 
-            mass.push_back(component_data.mass);
-            soft2.push_back(component_data.soft * component_data.soft);
+            mass.push_back(particle_mass);
+            soft2.push_back(particle_soft2);
 
             if (pos.size() % 100'000 == 0) {
                 spdlog::info("Read {}/{} row", pos.size(), N);
@@ -151,6 +154,11 @@ namespace rrgsim::io {
             particles_data.params.ntotal = particles_data.pos.size();
 
             spdlog::info("{} particles loaded", particles_data.pos.size());
+            if (particles_data.pos.size() % rrgsim::common::BLOCK_SIZE != 0) {
+                spdlog::error("Particles count must be a multiple of {}", rrgsim::common::BLOCK_SIZE);
+                return tl::make_unexpected("Unexpected particles data format");
+            }
+
             return particles_data;
         }
         catch(const std::exception& ex) {

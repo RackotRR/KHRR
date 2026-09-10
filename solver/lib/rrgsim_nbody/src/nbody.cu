@@ -57,10 +57,9 @@ void nbody_acceleration(
 )
 {
     spdlog::debug("NBody::acceleration (t={})", context->time);
-    context->acc_.set_zero();
 
     int blocks_count = calc_blocks_count(context->common_params.ntotal);
-    RR::CUDA::CuCall(acceleration_kernel_, blocks_count, BLOCK_SIZE) (
+    RR::CUDA::CuCall(acceleration_kernel_blocked_, blocks_count, BLOCK_SIZE) (
         context->acc_,
         context->pos_,
         context->mass_,
@@ -76,7 +75,7 @@ void nbody_grav(
     spdlog::debug("NBody::grav (t={})", context->time);
 
     int blocks_count = calc_blocks_count(context->common_params.ntotal);
-    RR::CUDA::CuCall(grav_kernel_, blocks_count, BLOCK_SIZE) (
+    RR::CUDA::CuCall(grav_kernel_blocked_, blocks_count, BLOCK_SIZE) (
         context->grav_,
         context->pos_,
         context->mass_,
@@ -141,6 +140,8 @@ ConservationInfo calc_conservation(
         info.Ep += m * grav[i];
     }
 
+    info.Ek *= 0.5;
+    info.Ep *= 0.5;
     return info;
 }
 
