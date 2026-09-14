@@ -34,6 +34,7 @@ namespace rrgsim::nbody {
 
     // контекст для пост-процессинга на CPU (данные, которые копируются с шагом dt_save)
     struct HostContext {
+        double time = 0.;
         std::vector<double3> pos;
         std::vector<double3> vel;
         std::vector<double> mass;
@@ -47,6 +48,7 @@ namespace rrgsim::nbody {
     );
 
     struct ConservationInfo {
+        double time = 0;
         double Ek = 0;
         double Ep = 0;
         double3 momentum = make_double3(0., 0., 0.);

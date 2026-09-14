@@ -1,5 +1,5 @@
 #include "nbody_kernel.cuh"
-#include "nbody.cuh"
+#include "nbody.h"
 #include <spdlog/spdlog.h>
 
 namespace rrgsim::nbody {
@@ -142,6 +142,7 @@ ConservationInfo calc_conservation(
 
     info.Ek *= 0.5;
     info.Ep *= 0.5;
+    info.time = host_context->time;
     return info;
 }
 

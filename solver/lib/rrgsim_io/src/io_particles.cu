@@ -4,7 +4,7 @@
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
-#include "io_particles.cuh"
+#include "io_particles.h"
 
 namespace rrgsim::io {
 

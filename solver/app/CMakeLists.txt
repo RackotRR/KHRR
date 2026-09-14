@@ -4,6 +4,7 @@ project(rrgsim CXX CUDA)
 add_executable(${PROJECT_NAME}
     src/rrgsim.cu
     src/rrgsim_log.cpp
+    src/rrgsim_conservation.cu
 )
 
 target_include_directories(${PROJECT_NAME}

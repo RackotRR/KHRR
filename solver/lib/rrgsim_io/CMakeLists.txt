@@ -5,6 +5,7 @@ project(rrgsim_io LANGUAGES CXX CUDA)
 add_library(${PROJECT_NAME} STATIC
     src/io_particles.cu
     src/io_params.cu
+    src/io_handler.cu
 )
 
 target_include_directories(${PROJECT_NAME}
