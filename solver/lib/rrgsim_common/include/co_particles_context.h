@@ -13,7 +13,7 @@ namespace rrgsim::common {
     using RR::CUDA::CuDarray;
 
     // контекст расчёта на GPU
-    struct Context {
+    struct ParticlesContext_ {
         double time = 0.; // current time
 
         CuDarray<double3> pos_; // particles position (GPU)
@@ -24,24 +24,33 @@ namespace rrgsim::common {
         CuDarray<double> soft2_; // particles softening squared (GPU)
         CuDarray<double> grav_; // particles gravitational potential (GPU)
 
-        CommonParams common_params;
+        ParticlesInfo info;
     };
-    using sContext = std::shared_ptr<Context>;
+    using sParticlesContext_ = std::shared_ptr<ParticlesContext_>;
 
     // контекст для пост-процессинга на CPU (данные, которые копируются с шагом dt_save)
-    struct HostContext {
+    struct ParticlesContext {
         double time = 0.;
         std::vector<double3> pos;
         std::vector<double3> vel;
         std::vector<double> mass;
         std::vector<double> grav;
+
+        void fill_device_data(
+            const sParticlesContext_& context_
+        );
     };
-    using sHostContext = std::shared_ptr<HostContext>;
+    using sParticlesContext = std::shared_ptr<ParticlesContext>;
 
 
-    tl::expected<sContext, std::string>
-    initialize_particles_context(
+    tl::expected<sParticlesContext_, std::string>
+    initialize_particles_context_(
         const common::ParticlesData& particles_data
+    );
+
+    sParticlesContext
+    initialize_particles_context(
+        common::ParticlesData particles_data
     );
 
 } // namespace rrgsim::common

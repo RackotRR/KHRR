@@ -8,7 +8,7 @@
 
 namespace rrgsim::nbody {
 	using rrgsim::common::BLOCK_SIZE;
-	using rrgsim::common::params_;
+	using rrgsim::common::particles_info_;
 	using rrgsim::common::cube;
 	using rrgsim::common::dot;
 
@@ -125,7 +125,7 @@ __global__ void predict_step_(
 )
 {
 	const int i = threadIdx.x + blockIdx.x * blockDim.x;
-	if (i >= params_.ntotal) {
+	if (i >= particles_info_.ntotal) {
 		return;
 	}
 
@@ -161,7 +161,7 @@ __global__ void correct_step_(
 )
 {
 	const int i = threadIdx.x + blockIdx.x * blockDim.x;
-	if (i >= params_.ntotal) {
+	if (i >= particles_info_.ntotal) {
 		return;
 	}
 

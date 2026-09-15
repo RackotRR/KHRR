@@ -17,67 +17,62 @@ void integrate(
     rrgsim::common::ParticlesData particles_data,
     rrgsim::common::SimParams sim_params
 ) {
-    auto expected_context_ = rrgsim::common::initialize_particles_context(particles_data);
+    auto expected_context_ = rrgsim::common::initialize_particles_context_(particles_data);
     if (false == expected_context_.has_value()) {
         spdlog::error("Initialization error: {}", expected_context_.error());
         return;
     }
 
-    auto context_ = std::move(expected_context_).value();
-    auto context = std::make_shared<rrgsim::common::HostContext>();
-    context->mass = std::move(particles_data.mass);
-    context->pos = std::move(particles_data.pos);
-    context->vel = std::move(particles_data.vel);
+    auto particles_context_ = std::move(expected_context_).value();
+    auto particles_context = initialize_particles_context(std::move(particles_data));
     rrgsim::nbody::nbody_grav(
-        context_,
+        particles_context_,
         sim_params
     );
     rrgsim::nbody::nbody_acceleration(
-        context_,
+        particles_context_,
         sim_params
     );
-    context->grav = context_->grav_.to_vector();
-    const auto base_conservation_info = rrgsim::nbody::calc_conservation(context);
+    particles_context->grav = particles_context_->grav_.to_vector();
+    const auto base_conservation_info = rrgsim::nbody::calc_conservation(particles_context);
     rrgsim::conservation::print_conservation(base_conservation_info);
 
     double time = 0.;
     double next_save = time + sim_params.dt_save;
     while (time < sim_params.time_max) {
         rrgsim::nbody::predict_step(
-            context_,
+            particles_context_,
             sim_params
         );
 
         rrgsim::nbody::nbody_acceleration(
-            context_,
+            particles_context_,
             sim_params
         );
 
         rrgsim::nbody::correct_step(
-            context_,
+            particles_context_,
             sim_params
         );
 
         time += sim_params.dt_dynamics;
-        context_->time = time;
+        particles_context_->time = time;
 
         if (time >= next_save) {
             spdlog::info("Time to save: {}", time);
 
             rrgsim::nbody::nbody_grav(
-                context_,
+                particles_context_,
                 sim_params
             );
 
-            context_->mass_.to_vector(context->mass);
-            context_->vel_.to_vector(context->vel);
-            context_->pos_.to_vector(context->pos);
-            context_->grav_.to_vector(context->grav);
-            context->time = time;
+            particles_context->fill_device_data(
+                particles_context_
+            );
 
             rrgsim::conservation::print_conservation(
                 base_conservation_info,
-                rrgsim::nbody::calc_conservation(context)
+                rrgsim::nbody::calc_conservation(particles_context)
             );
 
             next_save += sim_params.dt_save;

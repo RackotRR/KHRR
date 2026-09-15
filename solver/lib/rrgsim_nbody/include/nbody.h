@@ -5,11 +5,10 @@
 
 namespace rrgsim::nbody {
     using RR::CUDA::CuDarray;
-    using common::CommonParams;
+    using common::sParticlesContext;
+    using common::sParticlesContext_;
     using common::BLOCK_SIZE;
     using common::SimParams;
-    using common::sContext;
-    using common::sHostContext;
 
     struct ConservationInfo {
         double time = 0;
@@ -24,26 +23,26 @@ namespace rrgsim::nbody {
     };
 
     ConservationInfo calc_conservation(
-        sHostContext host_context
+        sParticlesContext host_context
     );
 
     void predict_step(
-        sContext context,
+        sParticlesContext_ context,
         const SimParams& sim_params
     );
 
     void nbody_acceleration(
-        sContext context,
+        sParticlesContext_ context,
         const SimParams& sim_params
     );
 
     void nbody_grav(
-        sContext context,
+        sParticlesContext_ context,
         const SimParams& sim_params
     );
 
     void correct_step(
-        sContext context,
+        sParticlesContext_ context,
         const SimParams& sim_params
     );
 

@@ -5,79 +5,79 @@
 namespace rrgsim::nbody {
 
 void predict_step(
-    sContext context,
+    sParticlesContext_ context_,
     const SimParams& sim_params
 )
 {
-    spdlog::debug("NBody::predict_step (t={})", context->time);
+    spdlog::debug("NBody::predict_step (t={})", context_->time);
 
-    int blocks_count = calc_blocks_count(context->common_params.ntotal);
+    int blocks_count = calc_blocks_count(context_->info.ntotal);
     RR::CUDA::CuCall(predict_step_, blocks_count, BLOCK_SIZE) (
-        context->acc_,
-        context->vel_,
-        context->pos_,
-        context->vel_predicted_,
+        context_->acc_,
+        context_->vel_,
+        context_->pos_,
+        context_->vel_predicted_,
         sim_params.dt_dynamics
     );
 }
 
 void nbody_acceleration(
-    sContext context,
+    sParticlesContext_ context_,
     const SimParams& sim_params
 )
 {
-    spdlog::debug("NBody::acceleration (t={})", context->time);
+    spdlog::debug("NBody::acceleration (t={})", context_->time);
 
-    int blocks_count = calc_blocks_count(context->common_params.ntotal);
+    int blocks_count = calc_blocks_count(context_->info.ntotal);
     RR::CUDA::CuCall(acceleration_kernel_blocked_, blocks_count, BLOCK_SIZE) (
-        context->acc_,
-        context->pos_,
-        context->mass_,
-        context->soft2_
+        context_->acc_,
+        context_->pos_,
+        context_->mass_,
+        context_->soft2_
     );
 }
 
 void nbody_grav(
-    sContext context,
+    sParticlesContext_ context_,
     const SimParams& sim_params
 )
 {
-    spdlog::debug("NBody::grav (t={})", context->time);
+    spdlog::debug("NBody::grav (t={})", context_->time);
 
-    int blocks_count = calc_blocks_count(context->common_params.ntotal);
+    int blocks_count = calc_blocks_count(context_->info.ntotal);
     RR::CUDA::CuCall(grav_kernel_blocked_, blocks_count, BLOCK_SIZE) (
-        context->grav_,
-        context->pos_,
-        context->mass_,
-        context->soft2_
+        context_->grav_,
+        context_->pos_,
+        context_->mass_,
+        context_->soft2_
     );
 }
 
 void correct_step(
-    sContext context,
+    sParticlesContext_ context_,
     const SimParams& sim_params
 )
 {
-    spdlog::debug("NBody::correct_step (t={})", context->time);
+    spdlog::debug("NBody::correct_step (t={})", context_->time);
 
-    int blocks_count = calc_blocks_count(context->common_params.ntotal);
+    int blocks_count = calc_blocks_count(context_->info.ntotal);
     RR::CUDA::CuCall(correct_step_, blocks_count, BLOCK_SIZE) (
-        context->acc_,
-        context->vel_,
-        context->vel_predicted_,
+        context_->acc_,
+        context_->vel_,
+        context_->vel_predicted_,
         sim_params.dt_dynamics
     );
 }
 
 ConservationInfo calc_conservation(
-    sHostContext host_context
+    sParticlesContext context
 )
 {
     spdlog::info("NBody::conservation");
-    const auto& pos = host_context->pos;
-    const auto& vel = host_context->vel;
-    const auto& mass = host_context->mass;
-    const auto& grav = host_context->grav;
+    const auto& pos = context->pos;
+    const auto& vel = context->vel;
+    const auto& mass = context->mass;
+    const auto& grav = context->grav;
     if (vel.size() != mass.size()) {
         throw std::runtime_error("Conservation calculation error: velocity and mass arrays size mismatch");
     }
@@ -112,7 +112,7 @@ ConservationInfo calc_conservation(
 
     info.Ek *= 0.5;
     info.Ep *= 0.5;
-    info.time = host_context->time;
+    info.time = context->time;
     return info;
 }
 

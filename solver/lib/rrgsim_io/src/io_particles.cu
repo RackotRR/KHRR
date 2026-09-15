@@ -151,7 +151,7 @@ namespace rrgsim::io {
                 EXPECTED_CHECK(expected_result);
             }
 
-            particles_data.params.ntotal = particles_data.pos.size();
+            particles_data.info.ntotal = particles_data.pos.size();
 
             spdlog::info("{} particles loaded", particles_data.pos.size());
             if (particles_data.pos.size() % rrgsim::common::BLOCK_SIZE != 0) {

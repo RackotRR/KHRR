@@ -34,6 +34,7 @@ target_link_options(rrgsim_common_properties
 add_library(rrgsim_common STATIC
     src/co_particles.cu
     src/co_particles_context.cu
+    src/co_grid_context.cu
 )
 
 target_include_directories(rrgsim_common

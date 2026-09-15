@@ -11,7 +11,7 @@ namespace rrgsim::common {
         std::vector<double> mass;
         std::vector<double> soft2;
 
-        CommonParams params;
+        ParticlesInfo info;
     };
 
 } // rrgsim::common
