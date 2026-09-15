@@ -1,5 +1,6 @@
 #include <co_params.cuh>
 #include <co_particles.cuh>
+#include <co_particles_context.h>
 #include <co_device_utils.cuh>
 
 #include "io_particles.h"
@@ -16,14 +17,14 @@ void integrate(
     rrgsim::common::ParticlesData particles_data,
     rrgsim::common::SimParams sim_params
 ) {
-    auto expected_context_ = rrgsim::nbody::initialize(particles_data);
+    auto expected_context_ = rrgsim::common::initialize_particles_context(particles_data);
     if (false == expected_context_.has_value()) {
         spdlog::error("Initialization error: {}", expected_context_.error());
         return;
     }
 
     auto context_ = std::move(expected_context_).value();
-    auto context = std::make_shared<rrgsim::nbody::HostContext>();
+    auto context = std::make_shared<rrgsim::common::HostContext>();
     context->mass = std::move(particles_data.mass);
     context->pos = std::move(particles_data.pos);
     context->vel = std::move(particles_data.vel);

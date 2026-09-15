@@ -23,6 +23,7 @@ target_link_libraries(rrgsim_common_properties
         CCCL::libcudacxx
         spdlog
         RR
+        rrgsim_tl
 )
 target_link_options(rrgsim_common_properties
     INTERFACE
@@ -32,6 +33,7 @@ target_link_options(rrgsim_common_properties
 # библиотека с общим кодом
 add_library(rrgsim_common STATIC
     src/co_particles.cu
+    src/co_particles_context.cu
 )
 
 target_include_directories(rrgsim_common
