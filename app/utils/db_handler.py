@@ -6,8 +6,7 @@ import json
 
 GENERAL_DATABASE_NAME = "rrgsim.db"
 PROJECT_DATABASE_NAME = "project.db"
-CALCULATION_INI_DATABASE_NAME = "ini.json"
-CALCULATION_SIM_DATABASE_NAME = "sim.json"
+CALCULATION_PARAMS_DATABASE_NAME = "params.json"
 
 def get_general_db_path() -> str:
     app_path = FilesystemHandler.app_dir
@@ -31,15 +30,10 @@ def init_project_db(project_name : str):
 def fill_calculation_db(
         project_name : str,
         calculation_name : str,
-        ini_dict : dict,
-        sim_dict : dict
+        params_dict : dict
     ):
     calculation_path = FilesystemHandler.get_project_calculation_path(project_name, calculation_name)
-    calc_ini_path = os.path.join(calculation_path, CALCULATION_INI_DATABASE_NAME)
-    calc_sim_path = os.path.join(calculation_path, CALCULATION_SIM_DATABASE_NAME)
+    params_path = os.path.join(calculation_path, CALCULATION_PARAMS_DATABASE_NAME)
 
-    with open(calc_ini_path, "w", encoding="utf-8") as f:
-        json.dump(ini_dict, f, ensure_ascii=False, indent=4)
-
-    with open(calc_sim_path, "w", encoding="utf-8") as f:
-        json.dump(sim_dict, f, ensure_ascii=False, indent=4)
+    with open(params_path, "w", encoding="utf-8") as f:
+        json.dump(params_dict, f, ensure_ascii=False, indent=4)

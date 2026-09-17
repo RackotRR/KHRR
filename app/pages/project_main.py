@@ -106,26 +106,23 @@ calculations = FilesystemHandler.scan_for_calculations(PROJECT_NAME)
     #         st.write(f"Частиц всего: {count_star_particles + count_dark_particles}")
 
 def fill_in_calculation_state(
-        ini_params : dict,
-        sim_params : dict,
+        params_dict : dict,
         calculation_name : str
 ):
     # по project_name + calc_name будем определять, надо ли подгружать данные из бд
     st.session_state["project_name"] = PROJECT_NAME
     st.session_state["calc_name"] = calculation_name
-    st.session_state["ini_params"] = ini_params
-    st.session_state["sim_params"] = sim_params
+    st.session_state["calc_params"] = params_dict
 
 @st.dialog("Создать расчёт")
 def create_calc_dialog(
-    ini_params : dict,
-    sim_params : dict
+    params_dict : dict
 ):
     calculation_name = st.text_input("Название расчёта", value=st.session_state.get("calc_name", ""))
     no_calc_name = len(calculation_name) == 0
 
     create_calc = st.button(
-        "Создать копию расчёта",
+        "Создать расчёт",
         use_container_width=True,
         disabled=no_calc_name
     )
@@ -135,11 +132,9 @@ def create_calc_dialog(
             DbHandler.fill_calculation_db(
                 PROJECT_NAME,
                 calculation_name,
-                ini_params,
-                sim_params)
+                params_dict)
             fill_in_calculation_state(
-                ini_params,
-                sim_params,
+                params_dict,
                 calculation_name)
             CommonNavigation.switch_to_calculation_main(PROJECT_NAME, calculation_name)
         except FileExistsError as ex:
@@ -147,8 +142,7 @@ def create_calc_dialog(
 
 def make_new_calc():
     with st.expander("Новый расчёт"):
-        ini_params = CommonCalcParams.make_ini_params(PROJECT_NAME, {})
-        sim_params = CommonCalcParams.make_sim_params({})
+        params_dict = CommonCalcParams.make_params_input(PROJECT_NAME, None)
         CommonCalcParams.make_run_params()
 
         create_new_calculation = st.button(
@@ -156,31 +150,28 @@ def make_new_calc():
             use_container_width=True
         )
         if create_new_calculation:
-            create_calc_dialog(ini_params, sim_params)
+            create_calc_dialog(params_dict)
 
 def make_existing_calcs():
 
     for calculation_name in calculations:
         with st.expander(f"Расчёт '{calculation_name}'"):
-            ini_params = CommonCalcParams.read_calculation_ini_params(PROJECT_NAME, calculation_name)
-            sim_params = CommonCalcParams.read_calculation_sim_params(PROJECT_NAME, calculation_name)
-
-            CommonCalcParams.make_ini_params_table(ini_params)
-            CommonCalcParams.make_sim_params_table(sim_params)
+            params_dict = CommonCalcParams.read_calculation_params(PROJECT_NAME, calculation_name)
+            CommonCalcParams.make_ini_params_table(params_dict.get("ini_params", {}))
+            CommonCalcParams.make_sim_params_table(params_dict.get("sim_params", {}))
 
             col1, col2 = st.columns(2)
 
             if col1.button("Перейти к расчёту", use_container_width=True, key=f"go_to_calc_{calculation_name}"):
                 fill_in_calculation_state(
-                    ini_params,
-                    sim_params,
+                    params_dict,
                     calculation_name)
                 CommonNavigation.switch_to_calculation_main(PROJECT_NAME, calculation_name)
 
             if col2.button("Создать копию расчёта", use_container_width=True, key=f"create_copy_calc_{calculation_name}"):
                 st.toast("TODO: сделать нумерованные копии")
                 st.session_state["calc_name"] = calculation_name + "_copy"
-                create_calc_dialog(ini_params, sim_params)
+                create_calc_dialog(params_dict)
 
 
 st.header(f"Проект '{PROJECT_NAME}'")

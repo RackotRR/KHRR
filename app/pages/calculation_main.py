@@ -28,14 +28,7 @@ CommonSidebar.make_sidebar({
     CommonSidebar.HOME_PROJECT: PROJECT_NAME
 })
 
-st.session_state["ini_params"] = CommonCalcParams.make_ini_params(
-    PROJECT_NAME,
-    st.session_state.get("ini_params", {})
-)
-
-st.session_state["sim_params"] = CommonCalcParams.make_sim_params(
-    st.session_state.get("sim_params", {})
-)
+st.session_state["calc_params"] = CommonCalcParams.make_params_input(PROJECT_NAME, CALCULATION_NAME)
 
 CommonCalcParams.make_run_params()
 
@@ -43,6 +36,6 @@ if st.button("Сохранить", use_container_width=True):
     DbHandler.fill_calculation_db(
         PROJECT_NAME,
         CALCULATION_NAME,
-        st.session_state["ini_params"],
-        st.session_state["sim_params"])
+        st.session_state["calc_params"]
+    )
 st.button("Запустить расчёт", use_container_width=True)

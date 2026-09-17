@@ -124,7 +124,7 @@ namespace rrgsim::io {
                 )
                 &&
                 parse_mandatory_json_object(
-                    "galaxy_data",
+                    "ini_params",
                     parsed.galaxy_data,
                     json
                 );

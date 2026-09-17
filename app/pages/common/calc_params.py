@@ -151,14 +151,80 @@ def make_sim_params(sim_params : dict):
 
 def make_sim_params_table(sim_params : dict):
     data_params = pd.DataFrame([{
-            "Время симуляции": sim_params.get("time_max"),
-            "Шаг сохранения": sim_params.get("dt_save"),
-            "Шаг интегрирования": sim_params.get("dt_dynamics"),
+            "Время симуляции": sim_params.get(TIME_MAX_ID),
+            "Шаг сохранения": sim_params.get(DT_SAVE_ID),
+            "Шаг интегрирования": sim_params.get(DT_DYNAMICS_ID),
         }]
     )
     st.table(data_params.transpose(), hide_header=True)
 
+GRID_NX_ID = "nx"
+GRID_DX_ID = "dx"
+GRID_BC_PART_ID = "bc_part"
+def make_grid_params(grid_params : dict):
 
+    with st.expander("Параметры сетки", expanded=True):
+        grid_params[GRID_NX_ID] = st.number_input(
+            "Количество ячеек",
+            value=grid_params.get(GRID_NX_ID, 100),
+            help="Количество ячеек в одном измерении"
+        )
+        grid_params[GRID_DX_ID] = st.number_input(
+            "Шаг сетки",
+            value=grid_params.get(GRID_DX_ID, 0.01),
+            format=NUMBER_FORMAT,
+            help="Безразмерная длина"
+        )
+        grid_params[GRID_BC_PART_ID] = st.slider(
+            "Доля домена на границы",
+            value=grid_params.get(GRID_BC_PART_ID, 0.2),
+            help="Доля домена на границы в одном измерении (с каждой стороны по 1/2 от введённого значения)"
+        )
+
+        st.write("Оценка распределения ячеек в одном измерении:")
+        col1, col2, col3 = st.columns(3)
+
+        bc_l = 0.5 * grid_params[GRID_BC_PART_ID]
+        sim_l = 1.0 - grid_params[GRID_BC_PART_ID]
+
+        col1.write("Граница слева")
+        col1.write(int(bc_l * grid_params[GRID_NX_ID]))
+        col1.write(f"[{0.0} .. {bc_l}]")
+        col2.write("Основная область")
+        col2.write(int(sim_l * grid_params[GRID_NX_ID]))
+        col2.write(f"[{bc_l} .. {bc_l + sim_l}]")
+        col3.write("Граница справа")
+        col3.write(int(bc_l * grid_params[GRID_NX_ID]))
+        col3.write(f"[{bc_l + sim_l} .. {bc_l + sim_l + bc_l}]")
+
+    return grid_params
+
+
+def make_params_input(
+    project_name : str,
+    calculation_name : str | None
+):
+    params_dict = {}
+
+    if calculation_name:
+        saved_params = read_calculation_params(project_name, calculation_name)
+
+        params_dict["ini_params"] = make_ini_params(
+            project_name,
+            saved_params.get("ini_params", {})
+        )
+        params_dict["sim_params"] = make_sim_params(
+            saved_params.get("sim_params", {})
+        )
+        params_dict["grid_params"] = make_grid_params(
+            saved_params.get("grid_params", {})
+        )
+    else:
+        params_dict["ini_params"] = make_ini_params(project_name, {})
+        params_dict["sim_params"] = make_sim_params({})
+        params_dict["grid_params"] = make_grid_params({})
+
+    return params_dict
 
 def make_run_params():
 
@@ -166,36 +232,18 @@ def make_run_params():
         solvers = FilesystemHandler.scan_for_solvers()
         st.selectbox("Используемый солвер", options=solvers)
 
-def read_calculation_ini_params(
-        project_name : str,
-        calculation_name : str
-    ):
-
+def read_calculation_params(
+    project_name : str,
+    calculation_name : str
+):
     calculation_path = FilesystemHandler.get_project_calculation_path(project_name, calculation_name)
-    calculation_ini_path = os.path.join(calculation_path, DbHandler.CALCULATION_INI_DATABASE_NAME)
+    calculation_params_path = os.path.join(calculation_path, DbHandler.CALCULATION_PARAMS_DATABASE_NAME)
 
-    ini_params = {}
-    if os.path.exists(calculation_ini_path):
-        with open(calculation_ini_path) as f:
-            ini_params = json.load(f)
+    params_dict = {}
+    if os.path.exists(calculation_params_path):
+        with open(calculation_params_path) as f:
+            params_dict = json.load(f)
     else:
-        st.error(f"В расчёте отсутствует {DbHandler.CALCULATION_INI_DATABASE_NAME}")
+        st.error(f"В расчёте отсутствует {DbHandler.CALCULATION_PARAMS_DATABASE_NAME}")
 
-    return ini_params
-
-def read_calculation_sim_params(
-        project_name : str,
-        calculation_name : str
-    ):
-
-    calculation_path = FilesystemHandler.get_project_calculation_path(project_name, calculation_name)
-    calculation_sim_path = os.path.join(calculation_path, DbHandler.CALCULATION_SIM_DATABASE_NAME)
-
-    sim_params = {}
-    if os.path.exists(calculation_sim_path):
-        with open(calculation_sim_path) as f:
-            sim_params = json.load(f)
-    else:
-        st.error(f"В расчёте отсутствует {DbHandler.CALCULATION_SIM_DATABASE_NAME}")
-
-    return sim_params
+    return params_dict
