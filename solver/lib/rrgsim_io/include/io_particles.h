@@ -3,7 +3,6 @@
 #include <limits>
 #include <filesystem>
 #include <rrgsim_tl.h>
-#include <nlohmann/json.hpp>
 #include <cuda_runtime.h>
 #include <co_particles.h>
 
@@ -28,9 +27,6 @@ namespace rrgsim::io {
         tl::optional<fs::path> mb_ini_file_star;
         tl::optional<fs::path> mb_ini_file_dark;
     };
-
-    void to_json(nlohmann::json& j, const IniGalaxyData& galaxy_data);
-    void from_json(const nlohmann::json& j, IniGalaxyData& galaxy_data);
 
     /// @brief
     /// @param component_data

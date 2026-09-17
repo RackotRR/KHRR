@@ -4,7 +4,7 @@
 #include <co_device_utils.cuh>
 
 #include "io_particles.h"
-#include "io_sim_params.h"
+#include "io_json.h"
 #include "io_handler.h"
 
 #include <fstream>
@@ -91,24 +91,23 @@ int main(int argc, const char** argv) {
         rrgsim::log::setup_logging(work_dir_path);
         rrgsim::io::IOHandler::setup(work_dir_path);
 
-        std::filesystem::path ini_path = work_dir_path / "ini.json";
-        auto expected_particles_data = rrgsim::io::read_simple_particles_data(ini_path);
-        if (false == expected_particles_data.has_value()) {
-            spdlog::error("Error: {}", expected_particles_data.error());
+        auto expected_parsed_params = rrgsim::io::parse_params_json(work_dir_path / "params.json");
+        if (false == expected_parsed_params.has_value()) {
+            spdlog::error("Error: {}", expected_parsed_params.error());
             return 0;
         }
+        rrgsim::io::ParsedParams parsed = std::move(expected_parsed_params).value();
 
-        std::filesystem::path sim_params_path = work_dir_path / "sim.json";
-        auto expected_sim_params = rrgsim::io::read_sim_params(sim_params_path);
-        if (false == expected_sim_params.has_value()) {
-            spdlog::error("Error: {}", expected_sim_params.error());
+        auto expected_particles_data = rrgsim::io::read_simple_particles_data(parsed.galaxy_data);
+        if (false == expected_particles_data.has_value()) {
+            spdlog::error("Error: {}", expected_particles_data.error());
             return 0;
         }
 
         try {
             ::integrate(
                 std::move(expected_particles_data).value(),
-                std::move(expected_sim_params).value()
+                std::move(parsed.sim_params)
             );
         }
         catch (const std::exception& ex) {

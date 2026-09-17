@@ -1,43 +1,12 @@
 #include <fstream>
-#include <nlohmann/json.hpp>
 #include <csv.hpp>
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
 #include "io_particles.h"
+#include "io_json.h"
 
 namespace rrgsim::io {
-
-    void to_json(nlohmann::json& j, const IniGalaxyData& galaxy_data) {
-        j["mass_star"] = galaxy_data.mass_star;
-        j["mass_dark"] = galaxy_data.mass_dark;
-        j["soft_star"] = galaxy_data.soft_star;
-        j["soft_dark"] = galaxy_data.soft_dark;
-
-        auto path_to_json = [](const fs::path& path) -> nlohmann::json {
-            return path.string();
-        };
-        j["ini_file_star"] = galaxy_data.mb_ini_file_star.map_or(path_to_json, nlohmann::json{ nullptr });
-        j["ini_file_dark"] = galaxy_data.mb_ini_file_dark.map_or(path_to_json, nlohmann::json{ nullptr });
-    }
-    void from_json(const nlohmann::json& j, IniGalaxyData& galaxy_data) {
-        j.at("mass_star").get_to(galaxy_data.mass_star);
-        j.at("mass_dark").get_to(galaxy_data.mass_dark);
-        j.at("soft_star").get_to(galaxy_data.soft_star);
-        j.at("soft_dark").get_to(galaxy_data.soft_dark);
-
-        auto json_to_path = [&j](std::string_view key) -> tl::optional<fs::path> {
-            if (auto iter = j.find(key); iter != j.end() && !iter->is_null()) {
-                return iter->get<std::string>();
-            }
-            else {
-                return tl::nullopt;
-            }
-        };
-        galaxy_data.mb_ini_file_star = json_to_path("ini_file_star");
-        galaxy_data.mb_ini_file_dark = json_to_path("ini_file_dark");
-    }
-
 
     tl::expected<size_t, std::string>
     read_particles_data_component(
