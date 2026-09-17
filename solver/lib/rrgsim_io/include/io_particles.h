@@ -5,7 +5,7 @@
 #include <rrgsim_tl.h>
 #include <nlohmann/json.hpp>
 #include <cuda_runtime.h>
-#include <co_particles.cuh>
+#include <co_particles.h>
 
 namespace rrgsim::io {
 
@@ -40,6 +40,11 @@ namespace rrgsim::io {
     read_particles_data_component(
         const IniGalaxyComponentData& component_data,
         ParticlesData& particles_data
+    );
+
+    tl::expected<ParticlesData, std::string>
+    read_simple_particles_data(
+        const IniGalaxyData& galaxy_data
     );
 
     tl::expected<ParticlesData, std::string>

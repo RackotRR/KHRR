@@ -7,7 +7,7 @@
 #include <rrgsim_tl.h>
 
 #include <co_device_structs.cuh>
-#include <co_particles.cuh>
+#include <co_particles.h>
 
 namespace rrgsim::common {
     using RR::CUDA::CuDarray;
@@ -31,13 +31,22 @@ namespace rrgsim::common {
         double time = 0.;
         std::vector<double> mass;
         std::vector<double> grav;
+
+        void fill_device_data(
+            const sGridContext_ context_
+        );
     };
     using sGridContext = std::shared_ptr<GridContext>;
 
 
-    tl::expected<sGridContext_, std::string>
+    sGridContext_
+    initialize_grid_context_(
+        GridInfo grid_info
+    );
+
+    sGridContext
     initialize_grid_context(
-        const common::ParticlesData& particles_data
+        GridInfo grid_info
     );
 
 } // namespace rrgsim::common

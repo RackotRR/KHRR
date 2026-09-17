@@ -1,10 +1,10 @@
-#include <co_params.cuh>
-#include <co_particles.cuh>
+#include <co_sim_params.h>
+#include <co_particles.h>
 #include <co_particles_context.h>
 #include <co_device_utils.cuh>
 
 #include "io_particles.h"
-#include "io_params.h"
+#include "io_sim_params.h"
 #include "io_handler.h"
 
 #include <fstream>

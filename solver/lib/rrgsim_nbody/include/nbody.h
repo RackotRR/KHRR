@@ -1,5 +1,5 @@
 #pragma once
-#include <co_params.cuh>
+#include <co_sim_params.h>
 #include <co_device_structs.cuh>
 #include <co_particles_context.h>
 

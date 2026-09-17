@@ -5,7 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <tl/expected.hpp>
 
-#include <co_params.cuh>
+#include <co_sim_params.h>
 
 namespace rrgsim::common {
     void to_json(nlohmann::json& j, const SimParams& sim_params);

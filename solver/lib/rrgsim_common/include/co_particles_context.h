@@ -7,7 +7,7 @@
 #include <rrgsim_tl.h>
 
 #include <co_device_structs.cuh>
-#include <co_particles.cuh>
+#include <co_particles.h>
 
 namespace rrgsim::common {
     using RR::CUDA::CuDarray;

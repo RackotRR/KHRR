@@ -1,6 +1,6 @@
 #include <fstream>
 #include <spdlog/spdlog.h>
-#include "io_params.h"
+#include "io_sim_params.h"
 
 
 namespace rrgsim::common {

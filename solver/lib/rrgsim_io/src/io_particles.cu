@@ -116,19 +116,15 @@ namespace rrgsim::io {
         return ini_N;
     }
 
+
     tl::expected<ParticlesData, std::string>
     read_simple_particles_data(
-        const fs::path& ini_json_path
+        const IniGalaxyData& ini_galaxy_data
     )
     {
-        spdlog::info("Read particles data. Ini json path: {}", ini_json_path.string());
+        spdlog::info("Read particles data");
 
         try {
-            std::ifstream stream{ ini_json_path };
-            nlohmann::json ini_json; stream >> ini_json;
-
-            const IniGalaxyData ini_galaxy_data = ini_json.get<IniGalaxyData>();
-
             ParticlesData particles_data;
 
             if (ini_galaxy_data.mb_ini_file_star) {
@@ -160,6 +156,28 @@ namespace rrgsim::io {
             }
 
             return particles_data;
+        }
+        catch(const std::exception& ex) {
+            return tl::make_unexpected(
+                fmt::format("Can't read simple particles data: {}", ex.what())
+            );
+        }
+    }
+
+    tl::expected<ParticlesData, std::string>
+    read_simple_particles_data(
+        const fs::path& ini_json_path
+    )
+    {
+        spdlog::info("Read particles data. Ini json path: {}", ini_json_path.string());
+
+        try {
+            std::ifstream stream{ ini_json_path };
+            nlohmann::json ini_json; stream >> ini_json;
+
+            return read_simple_particles_data(
+                ini_json.get<IniGalaxyData>()
+            );
         }
         catch(const std::exception& ex) {
             return tl::make_unexpected(

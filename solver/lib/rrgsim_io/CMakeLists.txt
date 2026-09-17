@@ -4,7 +4,7 @@ project(rrgsim_io LANGUAGES CXX CUDA)
 # библиотека с общим кодом
 add_library(${PROJECT_NAME} STATIC
     src/io_particles.cu
-    src/io_params.cu
+    src/io_sim_params.cu
     src/io_handler.cu
 )
 
