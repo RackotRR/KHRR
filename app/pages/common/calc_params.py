@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import sys
 import json
 import pandas as pd
 import utils.filesystem_handler as FilesystemHandler
@@ -44,7 +45,7 @@ INI_FILE_DARK_ID = "ini_file_dark"
 def make_ini_params(project_name : str, ini_params : dict):
 
     # одна галактика
-    with st.expander("Начальные условия (упрощённый режим)", expanded=True):
+    with st.expander("Начальные условия (упрощённый режим)"):
 
         col_star, col_dark = st.columns(2)
 
@@ -125,9 +126,18 @@ def make_ini_params_table(ini_params : dict):
 TIME_MAX_ID = "time_max"
 DT_SAVE_ID = "dt_save"
 DT_DYNAMICS_ID = "dt_dynamics"
+ACCELERATION_MODEL_ID = "acceleration_model"
+
+ACCELERATION_MODEL_TAG_NBODY = "N-Body"
+ACCELERATION_MODEL_TAG_WAVE = "Wave"
+ACCELERATION_MODEL = [
+    ACCELERATION_MODEL_TAG_NBODY,
+    ACCELERATION_MODEL_TAG_WAVE
+]
+
 def make_sim_params(sim_params : dict):
 
-    with st.expander("Параметры симуляции", expanded=True):
+    with st.expander("Параметры симуляции"):
         sim_params[TIME_MAX_ID] = st.number_input(
             "Время симуляции",
             value=sim_params.get(TIME_MAX_ID, 1.0),
@@ -146,6 +156,12 @@ def make_sim_params(sim_params : dict):
             format=NUMBER_FORMAT,
             help="Безразмерное время"
         )
+        sim_params[ACCELERATION_MODEL_ID] = st.selectbox(
+            "Модель расчёта ускорения",
+            # Если в параметрах есть Модель расчёта ускорения, испельзуем её; а иначе - N-Body
+            index=ACCELERATION_MODEL.index(sim_params.get(ACCELERATION_MODEL_ID, ACCELERATION_MODEL_TAG_NBODY)),
+            options=ACCELERATION_MODEL
+        )
 
     return sim_params
 
@@ -154,6 +170,7 @@ def make_sim_params_table(sim_params : dict):
             "Время симуляции": sim_params.get(TIME_MAX_ID),
             "Шаг сохранения": sim_params.get(DT_SAVE_ID),
             "Шаг интегрирования": sim_params.get(DT_DYNAMICS_ID),
+            "Модель расчёта ускорения": sim_params.get(ACCELERATION_MODEL_ID)
         }]
     )
     st.table(data_params.transpose(), hide_header=True)
@@ -162,8 +179,7 @@ GRID_NX_ID = "nx"
 GRID_DX_ID = "dx"
 GRID_BC_PART_ID = "bc_part"
 def make_grid_params(grid_params : dict):
-
-    with st.expander("Параметры сетки", expanded=True):
+    with st.expander("Параметры сетки"):
         grid_params[GRID_NX_ID] = st.number_input(
             "Количество ячеек",
             value=grid_params.get(GRID_NX_ID, 100),
@@ -199,6 +215,33 @@ def make_grid_params(grid_params : dict):
 
     return grid_params
 
+WAVE_DISS_BASE_ID = "diss_base"
+WAVE_DISS_EXTRA_ID = "diss_extra"
+WAVE_SPEED_ID = "wave_speed"
+WAVE_SETUP_ITERATIONS_ID = "setup_iterations"
+def make_wave_params(wave_params : dict) -> dict:
+    with st.expander("Параметры волновой модели"):
+        wave_params[WAVE_DISS_BASE_ID] = st.number_input(
+            "Коэффициент диссипации в основной области (постоянная часть)",
+            format=NUMBER_FORMAT,
+            value=wave_params.get(WAVE_DISS_BASE_ID, 0.1)
+        )
+        wave_params[WAVE_DISS_EXTRA_ID] = st.number_input(
+            "Коэффициент диссипации в граничной области (квадратичная часть)",
+            format=NUMBER_FORMAT,
+            value=wave_params.get(WAVE_DISS_EXTRA_ID, 0.01)
+        )
+        wave_params[WAVE_SPEED_ID] = st.number_input(
+            "Скорость распространения волны",
+            format=NUMBER_FORMAT,
+            value=wave_params.get(WAVE_SPEED_ID, 4574.337022617616) # TODO: вспомнить, откуда значение
+        )
+        wave_params[WAVE_SETUP_ITERATIONS_ID] = st.number_input(
+            "Количество итераций на установление базового решения",
+            value=wave_params.get(WAVE_SETUP_ITERATIONS_ID, 20_000)
+        )
+    return wave_params
+
 
 def make_params_input(
     project_name : str,
@@ -206,31 +249,52 @@ def make_params_input(
 ):
     params_dict = {}
 
+    saved_params = {}
     if calculation_name:
         saved_params = read_calculation_params(project_name, calculation_name)
 
-        params_dict["ini_params"] = make_ini_params(
-            project_name,
-            saved_params.get("ini_params", {})
-        )
-        params_dict["sim_params"] = make_sim_params(
-            saved_params.get("sim_params", {})
-        )
+    params_dict["ini_params"] = make_ini_params(
+        project_name,
+        saved_params.get("ini_params", {})
+    )
+    params_dict["sim_params"] = make_sim_params(
+        saved_params.get("sim_params", {})
+    )
+
+    if params_dict["sim_params"][ACCELERATION_MODEL_ID] == ACCELERATION_MODEL_TAG_WAVE:
         params_dict["grid_params"] = make_grid_params(
             saved_params.get("grid_params", {})
         )
-    else:
-        params_dict["ini_params"] = make_ini_params(project_name, {})
-        params_dict["sim_params"] = make_sim_params({})
-        params_dict["grid_params"] = make_grid_params({})
+        params_dict["wave_params"] = make_wave_params(
+            saved_params.get("wave_params", {})
+        )
 
     return params_dict
 
+RUN_SOLVER_PATH_ID = "solver"
 def make_run_params():
+    run_params = {}
 
-    with st.expander("Параметры запуска", expanded=True):
+    with st.expander("Параметры запуска"):
         solvers = FilesystemHandler.scan_for_solvers()
-        st.selectbox("Используемый солвер", options=solvers)
+        solver_path = st.selectbox(
+            "Используемый солвер",
+            options=solvers
+        )
+
+        def to_absolute_solver_path(relative_solver_path : str | None) -> str | None:
+            if relative_solver_path is None:
+                return None
+            else:
+                file_ext = ".exe" if sys.platform == "win32" else ""
+                return os.path.join(
+                    FilesystemHandler.solvers_dir,
+                    f"{relative_solver_path}{file_ext}"
+                )
+
+        run_params[RUN_SOLVER_PATH_ID] = to_absolute_solver_path(solver_path)
+
+    return run_params
 
 def read_calculation_params(
     project_name : str,

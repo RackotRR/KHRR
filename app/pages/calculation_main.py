@@ -29,8 +29,7 @@ CommonSidebar.make_sidebar({
 })
 
 st.session_state["calc_params"] = CommonCalcParams.make_params_input(PROJECT_NAME, CALCULATION_NAME)
-
-CommonCalcParams.make_run_params()
+run_params = CommonCalcParams.make_run_params()
 
 if st.button("Сохранить", use_container_width=True):
     DbHandler.fill_calculation_db(
@@ -38,4 +37,11 @@ if st.button("Сохранить", use_container_width=True):
         CALCULATION_NAME,
         st.session_state["calc_params"]
     )
-st.button("Запустить расчёт", use_container_width=True)
+
+if st.button(
+    "Запустить расчёт",
+    use_container_width=True,
+    disabled=run_params.get(CommonCalcParams.RUN_SOLVER_PATH_ID) is None
+):
+    pass
+
